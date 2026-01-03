@@ -12,7 +12,10 @@ import {
   LogOut,
   Building2,
   CreditCard,
-  Receipt
+  Receipt,
+  UsersIcon,
+  Clock,
+  Package2
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { cn } from '../../lib/utils'
@@ -50,6 +53,8 @@ const Sidebar = () => {
         { path: '/expenses', label: 'Expenses', icon: DollarSign },
         { path: '/payments', label: 'Payments', icon: CreditCard },
         { path: '/accounts', label: 'Accounts', icon: Building2 },
+        { path: '/labour-expenses', label: 'Labour Expenses', icon: Clock },
+        { path: '/labour', label: 'Labour', icon: UsersIcon },
         { path: '/daily-cash-memo', label: 'Daily Cash Memo', icon: Receipt },
       ]
     }

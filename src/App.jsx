@@ -16,6 +16,8 @@ import Accounts from './pages/accounts/Accounts'
 import Payments from './pages/vouchers/Payments'
 import Users from './pages/users/Users'
 import DailyCashMemo from './pages/dailyCashMemo/DailyCashMemo'
+import LabourRates from './pages/labourRates/LabourRates'
+import LabourExpenses from './pages/labourExpenses/LabourExpenses'
 
 function App() {
   return (
@@ -43,6 +45,8 @@ function App() {
             <Route path="accounts" element={<Accounts />} />
             <Route path="payments" element={<Payments />} />
             <Route path="daily-cash-memo" element={<DailyCashMemo />} />
+            <Route path="labour" element={<LabourRates />} />
+            <Route path="labour-expenses" element={<LabourExpenses />} />
             <Route path="users" element={<Users />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
