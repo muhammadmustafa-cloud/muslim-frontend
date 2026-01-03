@@ -1,8 +1,11 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
-const Input = React.forwardRef(({ className, type = "text", label, id, required, error, placeholder, ...props }, ref) => {
-  const inputId = id;
+const Input = React.forwardRef(({ className, type = "text", label, name, id, required, error, placeholder, register, ...props }, ref) => {
+  const inputId = id || name;
+  
+  // If register is provided, use it to register the input
+  const registerProps = register ? register(name) : {};
   return (
     <div className="space-y-2">
       {label && (
@@ -14,6 +17,7 @@ const Input = React.forwardRef(({ className, type = "text", label, id, required,
       <input
         type={type}
         id={inputId}
+        name={name}
         className={cn(
           "flex h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm",
           "placeholder:text-gray-400",
@@ -26,6 +30,7 @@ const Input = React.forwardRef(({ className, type = "text", label, id, required,
         )}
         ref={ref}
         placeholder={placeholder}
+        {...registerProps}
         {...props}
       />
       {error && (

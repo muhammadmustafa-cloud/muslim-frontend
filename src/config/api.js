@@ -30,7 +30,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-      window.location.href = '/login'
+      // Don't redirect here - let the AuthContext handle it
     }
     return Promise.reject(error)
   }
