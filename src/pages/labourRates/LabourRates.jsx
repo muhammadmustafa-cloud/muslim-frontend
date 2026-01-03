@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { Plus, Search, Edit2, Trash2, Package } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Package, Download } from 'lucide-react'
 import Card, { CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import { FormInput } from '../../components/ui/form-input'
@@ -16,6 +16,8 @@ import {
 import { DataTable } from '../../components/ui/data-table'
 import api from '../../config/api'
 import { formatDate } from '../../utils/formatters'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const LabourRates = () => {
   const [labourRates, setLabourRates] = useState([])
@@ -118,6 +120,126 @@ const LabourRates = () => {
     }
   }
 
+  const handleDownloadPDF = () => {
+    try {
+      const doc = new jsPDF()
+      
+      // Add custom font for better Unicode support
+      doc.setFont('helvetica')
+      
+      // Header with better styling
+      doc.setFontSize(24)
+      doc.setTextColor(0, 0, 0)
+      doc.text('Muslim Daal Mill', 105, 25, { align: 'center' })
+      
+      doc.setFontSize(18)
+      doc.setTextColor(59, 130, 246)
+      doc.text('Labour Records Report', 105, 35, { align: 'center' })
+      
+      // Add a line under the title
+      doc.setDrawColor(59, 130, 246)
+      doc.setLineWidth(0.5)
+      doc.line(20, 40, 190, 40)
+      
+      // Report info with better positioning
+      doc.setFontSize(10)
+      doc.setTextColor(100, 100, 100)
+      const reportDate = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
+      doc.text(`Generated on: ${reportDate}`, 105, 50, { align: 'center' })
+      
+      // Calculate totals
+      const totalBags = labourRates.reduce((sum, lr) => sum + (lr.bags || 0), 0)
+      const totalAmount = labourRates.reduce((sum, lr) => sum + ((lr.bags || 0) * (lr.rate || 0)), 0)
+      
+      // Table with better styling and totals
+      const tableData = labourRates.map(lr => [
+        lr.labourExpense?.name || 'Unknown',
+        lr.bags?.toString() || '0',
+        `PKR ${parseFloat(lr.rate || 0).toFixed(2)}`,
+        `PKR ${((lr.bags || 0) * (lr.rate || 0)).toFixed(2)}`,
+        formatDate(lr.createdAt)
+      ])
+      
+      // Add total row
+      tableData.push([
+        'TOTAL',
+        totalBags.toString(),
+        '',
+        `PKR ${totalAmount.toFixed(2)}`,
+        ''
+      ])
+      
+      autoTable(doc, {
+        head: [['Labour Name', 'Bags', 'Rate', 'Total Amount', 'Created Date']],
+        body: tableData,
+        startY: 65,
+        theme: 'plain',
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+          lineColor: [200, 200, 200],
+          textColor: [40, 40, 40]
+        },
+        headStyles: {
+          fillColor: [245, 245, 245],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold',
+          fontSize: 10,
+        },
+        columnStyles: {
+          0: { cellWidth: 55, halign: 'left' }, // Labour Name
+          1: { cellWidth: 25, halign: 'center' }, // Bags
+          2: { cellWidth: 35, halign: 'right' }, // Rate
+          3: { cellWidth: 40, halign: 'right' }, // Total Amount
+          4: { cellWidth: 35, halign: 'left' } // Created Date
+        },
+        // Style the last row (total row) differently
+        didParseCell: (data) => {
+          if (data.row.section === 'body' && data.row.index === tableData.length - 1) {
+            data.cell.styles.fontStyle = 'bold'
+            data.cell.styles.fillColor = [250, 250, 250]
+            data.cell.styles.textColor = [0, 0, 0]
+            if (data.column.index === 0) {
+              data.cell.styles.halign = 'left'
+            } else if (data.column.index === 1 || data.column.index === 3) {
+              data.cell.styles.halign = 'right'
+            }
+          }
+        },
+        margin: { top: 65, left: 20, right: 20 }
+      })
+      
+      // Footer with better styling
+      const pageCount = doc.internal.getNumberOfPages()
+      doc.setFontSize(9)
+      doc.setTextColor(150, 150, 150)
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        
+        // Add footer line
+        doc.setDrawColor(200, 200, 200)
+        doc.setLineWidth(0.3)
+        doc.line(20, doc.internal.pageSize.height - 15, 190, doc.internal.pageSize.height - 15)
+        
+        doc.text(`Page ${i} of ${pageCount}`, 105, doc.internal.pageSize.height - 10, { align: 'center' })
+        doc.text('Muslim Daal Mill Management System', 105, doc.internal.pageSize.height - 5, { align: 'center' })
+      }
+      
+      // Save the PDF with better filename
+      const fileName = `Labour-Records-${new Date().toISOString().split('T')[0]}.pdf`
+      doc.save(fileName)
+      
+      toast.success('PDF downloaded successfully')
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      toast.error('Failed to generate PDF')
+    }
+  }
+
   const columns = [
     {
       key: 'labourExpense.name',
@@ -188,10 +310,20 @@ const LabourRates = () => {
           <h1 className="text-2xl font-bold text-gray-900">Labour</h1>
           <p className="text-gray-600">Manage labour work records and bag counts</p>
         </div>
-        <Button onClick={handleAddLabourRate}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Labour Record
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={handleDownloadPDF}
+            variant="outline"
+            disabled={labourRates.length === 0}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download PDF
+          </Button>
+          <Button onClick={handleAddLabourRate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Labour Record
+          </Button>
+        </div>
       </div>
 
       <Card>
