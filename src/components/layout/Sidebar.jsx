@@ -39,6 +39,7 @@ const Sidebar = () => {
         { path: '/mazdoors', label: 'Mazdoors', icon: UserCheck },
       ]
     },
+
     {
       title: 'Inventory',
       items: [
