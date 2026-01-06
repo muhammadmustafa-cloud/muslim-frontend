@@ -23,25 +23,39 @@ const LabourRates = () => {
   const [labourRates, setLabourRates] = useState([])
   const [labourExpenses, setLabourExpenses] = useState([])
   const [loading, setLoading] = useState(false)
+  const [loadingExpenses, setLoadingExpenses] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLabourRate, setEditingLabourRate] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [filters, setFilters] = useState({ startDate: '', endDate: '' })
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm()
 
+  // Fetch expenses once on mount (does not depend on search)
   useEffect(() => {
-    fetchLabourRates()
     fetchLabourExpenses()
-  }, [searchTerm])
+  }, [])
 
-  const fetchLabourRates = async () => {
+  // Initial load
+  useEffect(() => {
+    fetchLabourRates({ search: searchTerm, startDate: filters.startDate, endDate: filters.endDate })
+  }, [])
+
+  const fetchLabourRates = async ({ search = '', startDate = '', endDate = '' } = {}) => {
     try {
       setLoading(true)
+      const today = new Date().toISOString().slice(0, 10)
+      const effectiveStart = startDate || endDate || today
+      const effectiveEnd = endDate || startDate || today
       const response = await api.get('/labour-rates', {
         params: {
           page: 1,
           limit: 1000,
-          search: searchTerm,
+          search,
+          startDate: effectiveStart,
+          endDate: effectiveEnd,
+          isActive: true,
         },
       })
       setLabourRates(response.data.data || [])
@@ -55,6 +69,7 @@ const LabourRates = () => {
 
   const fetchLabourExpenses = async () => {
     try {
+      setLoadingExpenses(true)
       const response = await api.get('/labour-expenses', {
         params: { page: 1, limit: 1000, isActive: true }
       })
@@ -62,6 +77,8 @@ const LabourRates = () => {
     } catch (error) {
       toast.error('Failed to fetch labour expenses')
       console.error(error)
+    } finally {
+      setLoadingExpenses(false)
     }
   }
 
@@ -81,15 +98,21 @@ const LabourRates = () => {
     setIsModalOpen(true)
   }
 
-  const handleDeleteLabourRate = async (id) => {
+  const handleDeleteLabourRate = async (row) => {
     if (!window.confirm('Are you sure you want to delete this labour record?')) {
+      return
+    }
+
+    const id = row?._id || row?.id
+    if (!id || typeof id !== 'string') {
+      toast.error('Invalid labour record')
       return
     }
 
     try {
       await api.delete(`/labour-rates/${id}`)
       toast.success('Labour record deleted successfully')
-      fetchLabourRates()
+      fetchLabourRates({ search: searchTerm, startDate: filters.startDate, endDate: filters.endDate })
     } catch (error) {
       toast.error('Failed to delete labour record')
       console.error(error)
@@ -98,11 +121,24 @@ const LabourRates = () => {
 
   const onSubmit = async (data) => {
     try {
-      // Get the labour expense to calculate rate
-      const labourExpense = labourExpenses.find(le => le._id === data.labourExpense)
+      setSaving(true)
+      // Coerce and validate inputs
+      const selectedExpense = labourExpenses.find(le => le._id === data.labourExpense)
+      const bags = Number(data.bags)
+
+      if (!selectedExpense) {
+        toast.error('Please select a valid labour')
+        return
+      }
+      if (Number.isNaN(bags) || bags < 0) {
+        toast.error('Bags must be 0 or more')
+        return
+      }
+
       const payload = {
-        ...data,
-        rate: labourExpense ? labourExpense.rate : 0
+        labourExpense: data.labourExpense,
+        bags,
+        rate: Number(selectedExpense.rate) || 0,
       }
 
       if (editingLabourRate) {
@@ -113,10 +149,12 @@ const LabourRates = () => {
         toast.success('Labour record created successfully')
       }
       setIsModalOpen(false)
-      fetchLabourRates()
+      fetchLabourRates({ search: searchTerm, startDate: filters.startDate, endDate: filters.endDate })
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to save labour record')
       console.error(error)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -152,15 +190,15 @@ const LabourRates = () => {
       doc.text(`Generated on: ${reportDate}`, 105, 50, { align: 'center' })
       
       // Calculate totals
-      const totalBags = labourRates.reduce((sum, lr) => sum + (lr.bags || 0), 0)
-      const totalAmount = labourRates.reduce((sum, lr) => sum + ((lr.bags || 0) * (lr.rate || 0)), 0)
+      const totalBags = labourRates.reduce((sum, lr) => sum + (Number(lr.bags) || 0), 0)
+      const totalAmount = labourRates.reduce((sum, lr) => sum + ((Number(lr.bags) || 0) * (Number(lr.rate) || 0)), 0)
       
       // Table with better styling and totals
       const tableData = labourRates.map(lr => [
         lr.labourExpense?.name || 'Unknown',
-        lr.bags?.toString() || '0',
-        `PKR ${parseFloat(lr.rate || 0).toFixed(2)}`,
-        `PKR ${((lr.bags || 0) * (lr.rate || 0)).toFixed(2)}`,
+        (Number(lr.bags) || 0).toString(),
+        `PKR ${Number(lr.rate || 0).toFixed(2)}`,
+        `PKR ${(((Number(lr.bags) || 0) * (Number(lr.rate) || 0))).toFixed(2)}`,
         formatDate(lr.createdAt)
       ])
       
@@ -254,7 +292,7 @@ const LabourRates = () => {
       render: (value, row) => (
         <div className="flex items-center">
           <Package className="h-4 w-4 text-gray-500 mr-1" />
-          <span className="font-medium">{value}</span>
+          <span className="font-medium">{Number(value) || 0}</span>
         </div>
       ),
     },
@@ -264,7 +302,7 @@ const LabourRates = () => {
       render: (value, row) => (
         <div className="flex items-center">
           <span className="text-sm font-bold text-green-600 mr-1">PKR</span>
-          <span className="font-medium">{parseFloat(value).toFixed(2)}</span>
+          <span className="font-medium">{Number(value || 0).toFixed(2)}</span>
         </div>
       ),
     },
@@ -272,7 +310,7 @@ const LabourRates = () => {
       key: 'totalAmount',
       label: 'Total Amount',
       render: (value, row) => {
-        const total = (row.bags || 0) * (row.rate || 0)
+        const total = (Number(row.bags) || 0) * (Number(row.rate) || 0)
         return (
           <div className="flex items-center">
             <span className="text-sm font-bold text-green-600 mr-1">PKR</span>
@@ -334,9 +372,28 @@ const LabourRates = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-end">
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+            </div>
+            <div className="w-full relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+              <Search className="absolute left-3 top-[42px] text-gray-400 h-4 w-4" />
               <input
                 type="text"
                 placeholder="Search labour records..."
@@ -344,6 +401,16 @@ const LabourRates = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
+            </div>
+            <div className="w-full">
+              <label className="block text-sm font-medium text-gray-700 mb-1">&nbsp;</label>
+              <Button
+                onClick={() => fetchLabourRates({ search: searchTerm, startDate: filters.startDate, endDate: filters.endDate })}
+                className="w-full"
+                disabled={loading}
+              >
+                Apply Filters
+              </Button>
             </div>
           </div>
 
@@ -353,7 +420,6 @@ const LabourRates = () => {
             loading={loading}
             onEdit={handleEditLabourRate}
             onDelete={handleDeleteLabourRate}
-            searchPlaceholder="Search labour records..."
           />
         </CardContent>
       </Card>
@@ -377,13 +443,16 @@ const LabourRates = () => {
                   Labour Name
                 </label>
                 <select
+                  disabled={loadingExpenses}
                   {...register('labourExpense', { required: 'Labour name is required' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
-                  <option value="">Select Labour</option>
+                  <option value="" disabled={loadingExpenses}>
+                    {loadingExpenses ? 'Loading labour list...' : 'Select Labour'}
+                  </option>
                   {labourExpenses.map((expense) => (
                     <option key={expense._id} value={expense._id}>
-                      {expense.name} (PKR {expense.rate})
+                      {expense.name} (PKR {Number(expense.rate || 0).toFixed(2)})
                     </option>
                   ))}
                 </select>
@@ -396,6 +465,8 @@ const LabourRates = () => {
                 label="Bags"
                 name="bags"
                 type="number"
+                step="1"
+                min="0"
                 register={register}
                 errors={errors}
                 placeholder="Enter number of bags"
@@ -410,8 +481,8 @@ const LabourRates = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {editingLabourRate ? 'Update' : 'Create'}
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving...' : (editingLabourRate ? 'Update' : 'Create')}
               </Button>
             </DialogFooter>
           </form>

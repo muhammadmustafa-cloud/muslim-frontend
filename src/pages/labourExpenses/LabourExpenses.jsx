@@ -38,6 +38,7 @@ const LabourExpenses = () => {
           page: 1,
           limit: 1000,
           search: searchTerm,
+          isActive: true,
         },
       })
       setLabourExpenses(response.data.data || [])
@@ -65,14 +66,22 @@ const LabourExpenses = () => {
     setIsModalOpen(true)
   }
 
-  const handleDeleteLabourExpense = async (id) => {
+  const handleDeleteLabourExpense = async (row) => {
     if (!window.confirm('Are you sure you want to delete this labour expense?')) {
+      return
+    }
+
+    const id = row?._id || row?.id
+    if (!id || typeof id !== 'string') {
+      toast.error('Invalid labour expense')
       return
     }
 
     try {
       await api.delete(`/labour-expenses/${id}`)
       toast.success('Labour expense deleted successfully')
+      // Optimistically update table
+      setLabourExpenses(prev => prev.filter(le => (le._id || le.id) !== id))
       fetchLabourExpenses()
     } catch (error) {
       toast.error('Failed to delete labour expense')
