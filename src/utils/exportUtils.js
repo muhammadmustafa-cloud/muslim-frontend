@@ -65,12 +65,6 @@ export const exportToPDF = (memo, selectedDate, previousBalance) => {
   const rows = []
   const maxRows = Math.max(creditEntries.length, debitEntries.length)
 
-  // Previous balance row (no spacer columns)
-  rows.push([
-    'Previous Blnc', '', formatCurrencyForExport(previousBalance || 0),
-    'Previous Blnc', '', ''
-  ])
-
   // Data rows - align side by side
   for (let i = 0; i < maxRows; i++) {
     const c = creditEntries[i] || {}
@@ -99,13 +93,45 @@ export const exportToPDF = (memo, selectedDate, previousBalance) => {
   // Closing Balance row
   const closingBalance = totalCredit - totalDebit
   rows.push([
-    'Closing Balance', '', formatCurrencyForExport(closingBalance),
-    '', '', ''
+    '', { content: 'Closing Balance', styles: { fontStyle: 'bold', halign: 'center' } }, '',
+    { content: formatCurrencyForExport(closingBalance), styles: { fontStyle: 'bold', halign: 'right' } }, '', ''
   ])
 
   // ===== TABLE (Single ledger-style table with 8 columns) =====
+  // Add previous balance as a special row before the main table header
   autoTable(doc, {
     startY: 45,
+    margin: { left: 14, right: 14 },
+    body: [[
+      { content: 'Previous Blnc', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+      { content: '', styles: { fillColor: [240, 240, 240] } },
+      { content: formatCurrencyForExport(previousBalance || 0), styles: { fontStyle: 'bold', halign: 'right', fillColor: [240, 240, 240] } },
+      { content: 'Previous Blnc', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+      { content: '', styles: { fillColor: [240, 240, 240] } },
+      { content: '', styles: { fillColor: [240, 240, 240] } }
+    ]],
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 8.2,
+      cellPadding: 1.8,
+      valign: 'middle',
+      lineWidth: 0.1,
+      lineColor: [0, 0, 0]
+    },
+    columnStyles: {
+      0: { cellWidth: 30, halign: 'left' },      // Credit Name
+      1: { cellWidth: 40, halign: 'left' },      // Credit Description
+      2: { cellWidth: 25, halign: 'right' },     // Credit Amount
+      3: { cellWidth: 30, halign: 'left' },      // Debit Name
+      4: { cellWidth: 40, halign: 'left' },      // Debit Description
+      5: { cellWidth: 25, halign: 'right' }      // Debit Amount
+    }
+  })
+
+  // Main table with headers
+  autoTable(doc, {
+    startY: doc.lastAutoTable.finalY + 2,
     margin: { left: 14, right: 14 },
     head: [[
       'Name', 'Description', 'Amount',
