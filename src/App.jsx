@@ -18,6 +18,8 @@ import Users from './pages/users/Users'
 import DailyCashMemo from './pages/dailyCashMemo/DailyCashMemo'
 import LabourRates from './pages/labourRates/LabourRates'
 import LabourExpenses from './pages/labourExpenses/LabourExpenses'
+import CustomerHistory from './pages/customers/CustomerHistory'
+import SupplierHistory from './pages/suppliers/SupplierHistory'
 
 function App() {
   return (
@@ -47,6 +49,10 @@ function App() {
             <Route path="daily-cash-memo" element={<DailyCashMemo />} />
             <Route path="labour" element={<LabourRates />} />
             <Route path="labour-expenses" element={<LabourExpenses />} />
+            <Route path="customer-history" element={<CustomerHistory />} />
+            <Route path="customer-history/:customerId" element={<CustomerHistory />} />
+            <Route path="supplier-history" element={<SupplierHistory />} />
+            <Route path="supplier-history/:supplierId" element={<SupplierHistory />} />
             <Route path="users" element={<Users />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

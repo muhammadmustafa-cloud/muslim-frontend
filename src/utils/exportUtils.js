@@ -35,6 +35,9 @@ export const exportToPDF = (memo, selectedDate, previousBalance) => {
   const creditEntries = memo?.creditEntries || []
   const debitEntries = memo?.debitEntries || []
 
+  console.log('PDF Export - Credit Entries:', creditEntries)
+  console.log('PDF Export - Debit Entries:', debitEntries)
+
   const { dayName, date: dateStr } = formatDateForExport(selectedDate)
   const doc = new jsPDF('p', 'mm', 'a4')
 
@@ -55,89 +58,74 @@ export const exportToPDF = (memo, selectedDate, previousBalance) => {
   doc.text(`Date: ${dateStr}`, 14, 25)
   doc.text(`Day: ${dayName}`, 14, 32)
 
-  // Section titles above table
+  // ===== PREPARE CREDIT DATA =====
+  const creditRows = []
+  
+  // Previous balance row
+  creditRows.push([
+    { content: 'Previous Balance', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+    { content: '', styles: { fillColor: [240, 240, 240] } },
+    { content: formatCurrencyForExport(previousBalance || 0), styles: { fontStyle: 'bold', halign: 'right', fillColor: [240, 240, 240] } }
+  ])
+
+  // Credit entries
+  creditEntries.forEach(entry => {
+    creditRows.push([
+      entry.name || '',
+      entry.description || '',
+      entry.amount ? formatCurrencyForExport(entry.amount) : ''
+    ])
+  })
+
+  // Credit total
+  const totalCredit = previousBalance + creditEntries.reduce((sum, e) => sum + (e.amount || 0), 0)
+  creditRows.push([
+    { content: 'Total', styles: { fontStyle: 'bold' } },
+    { content: '', styles: { fontStyle: 'bold' } },
+    { content: formatCurrencyForExport(totalCredit), styles: { fontStyle: 'bold', halign: 'right' } }
+  ])
+
+  // ===== PREPARE DEBIT DATA =====
+  const debitRows = []
+  
+  // Debit entries
+  debitEntries.forEach(entry => {
+    debitRows.push([
+      entry.name || '',
+      entry.description || '',
+      entry.amount ? formatCurrencyForExport(entry.amount) : ''
+    ])
+  })
+
+  // Debit total
+  const totalDebit = debitEntries.reduce((sum, e) => sum + (e.amount || 0), 0)
+  debitRows.push([
+    { content: 'Total', styles: { fontStyle: 'bold' } },
+    { content: '', styles: { fontStyle: 'bold' } },
+    { content: formatCurrencyForExport(totalDebit), styles: { fontStyle: 'bold', halign: 'right' } }
+  ])
+
+  // Closing balance
+  const closingBalance = totalCredit - totalDebit
+  debitRows.push([
+    { content: 'Closing Balance', styles: { fontStyle: 'bold' } },
+    { content: '', styles: { fontStyle: 'bold' } },
+    { content: formatCurrencyForExport(closingBalance), styles: { fontStyle: 'bold', halign: 'right' } }
+  ])
+
+  console.log('Credit rows:', creditRows)
+  console.log('Debit rows:', debitRows)
+
+  // ===== CREDIT TABLE =====
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.text('CREDIT (Cash In)', 14, 40)
-  doc.text('DEBIT (Cash Out)', 105, 40)
-
-  // ===== PREPARE ROWS (Side-by-side format) =====
-  const rows = []
-  const maxRows = Math.max(creditEntries.length, debitEntries.length)
-
-  // Data rows - align side by side
-  for (let i = 0; i < maxRows; i++) {
-    const c = creditEntries[i] || {}
-    const d = debitEntries[i] || {}
-
-    rows.push([
-      c.name || '',
-      c.description || '',
-      c.amount ? formatCurrencyForExport(c.amount) : '',
-      d.name || '',
-      d.description || '',
-      d.amount ? formatCurrencyForExport(d.amount) : ''
-    ])
-  }
-
-  // Calculate totals
-  const totalCredit = previousBalance + creditEntries.reduce((sum, e) => sum + (e.amount || 0), 0)
-  const totalDebit = debitEntries.reduce((sum, e) => sum + (e.amount || 0), 0)
-
-  // Total row
-  rows.push([
-    'Total', '', formatCurrencyForExport(totalCredit),
-    'Total', '', formatCurrencyForExport(totalDebit)
-  ])
-
-  // Closing Balance row
-  const closingBalance = totalCredit - totalDebit
-  rows.push([
-    '', { content: 'Closing Balance', styles: { fontStyle: 'bold', halign: 'center' } }, '',
-    { content: formatCurrencyForExport(closingBalance), styles: { fontStyle: 'bold', halign: 'right' } }, '', ''
-  ])
-
-  // ===== TABLE (Single ledger-style table with 8 columns) =====
-  // Add previous balance as a special row before the main table header
+  
   autoTable(doc, {
     startY: 45,
-    margin: { left: 14, right: 14 },
-    body: [[
-      { content: 'Previous Blnc', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
-      { content: '', styles: { fillColor: [240, 240, 240] } },
-      { content: formatCurrencyForExport(previousBalance || 0), styles: { fontStyle: 'bold', halign: 'right', fillColor: [240, 240, 240] } },
-      { content: 'Previous Blnc', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
-      { content: '', styles: { fillColor: [240, 240, 240] } },
-      { content: '', styles: { fillColor: [240, 240, 240] } }
-    ]],
-    theme: 'grid',
-    styles: {
-      font: 'helvetica',
-      fontSize: 8.2,
-      cellPadding: 1.8,
-      valign: 'middle',
-      lineWidth: 0.1,
-      lineColor: [0, 0, 0]
-    },
-    columnStyles: {
-      0: { cellWidth: 30, halign: 'left' },      // Credit Name
-      1: { cellWidth: 40, halign: 'left' },      // Credit Description
-      2: { cellWidth: 25, halign: 'right' },     // Credit Amount
-      3: { cellWidth: 30, halign: 'left' },      // Debit Name
-      4: { cellWidth: 40, halign: 'left' },      // Debit Description
-      5: { cellWidth: 25, halign: 'right' }      // Debit Amount
-    }
-  })
-
-  // Main table with headers
-  autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 2,
-    margin: { left: 14, right: 14 },
-    head: [[
-      'Name', 'Description', 'Amount',
-      'Name', 'Description', 'Amount'
-    ]],
-    body: rows,
+    margin: { left: 14, right: 110 },
+    head: [['Name', 'Description', 'Amount']],
+    body: creditRows,
     theme: 'grid',
     styles: {
       font: 'helvetica',
@@ -153,29 +141,46 @@ export const exportToPDF = (memo, selectedDate, previousBalance) => {
       fontStyle: 'bold',
       fontSize: 9
     },
-    bodyStyles: {
-      textColor: [0, 0, 0]
-    },
     columnStyles: {
-      0: { cellWidth: 30, halign: 'left' },      // Credit Name
-      1: { cellWidth: 40, halign: 'left' },      // Credit Description
-      2: { cellWidth: 25, halign: 'right' },     // Credit Amount
-      3: { cellWidth: 30, halign: 'left' },      // Debit Name
-      4: { cellWidth: 40, halign: 'left' },      // Debit Description
-      5: { cellWidth: 25, halign: 'right' }      // Debit Amount
-    },
-    bodyStyles: { overflow: 'linebreak' },
-    // Style Total and Closing Balance rows
-    didParseCell: function (data) {
-      const rowIndex = data.row.index
-      const bodyLength = rows.length
-      
-      // Check if it's the Total row (second to last) or Closing Balance row (last)
-      if (rowIndex === bodyLength - 2 || rowIndex === bodyLength - 1) {
-        data.cell.styles.fontStyle = 'bold'
-      }
+      0: { cellWidth: 35, halign: 'left' },
+      1: { cellWidth: 40, halign: 'left' },
+      2: { cellWidth: 20, halign: 'right' }
     }
   })
+
+  // ===== DEBIT TABLE =====
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.text('DEBIT (Cash Out)', 110, 40)
+  
+  autoTable(doc, {
+    startY: 45,
+    margin: { left: 110, right: 14 },
+    head: [['Name', 'Description', 'Amount']],
+    body: debitRows,
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 8.2,
+      cellPadding: 1.8,
+      valign: 'middle',
+      lineWidth: 0.1,
+      lineColor: [0, 0, 0]
+    },
+    headStyles: {
+      fillColor: [240, 240, 240],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      fontSize: 9
+    },
+    columnStyles: {
+      0: { cellWidth: 35, halign: 'left' },
+      1: { cellWidth: 40, halign: 'left' },
+      2: { cellWidth: 20, halign: 'right' }
+    }
+  })
+
+  console.log('PDF created successfully')
 
   // Save PDF
   const fileName = `Daily_Cash_Memo_${dateStr.replace(/\./g, '_')}.pdf`

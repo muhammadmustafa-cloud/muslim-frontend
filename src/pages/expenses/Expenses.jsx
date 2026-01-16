@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, RefreshCw } from 'lucide-react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -19,16 +19,30 @@ const Expenses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 })
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
   const category = watch('category')
 
+  // Expense categories for filter
+  const EXPENSE_CATEGORIES = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'mazdoor', label: 'Mazdoor' },
+    { value: 'electricity', label: 'Electricity' },
+    { value: 'rent', label: 'Rent' },
+    { value: 'transport', label: 'Transport' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'raw_material', label: 'Raw Material' },
+    { value: 'packaging', label: 'Packaging' },
+    { value: 'other', label: 'Other' }
+  ]
+
   useEffect(() => {
     fetchExpenses()
     fetchMazdoors()
     fetchSuppliers()
-  }, [pagination.page, searchTerm])
+  }, [pagination.page, selectedCategory])
 
   const fetchMazdoors = async () => {
     try {
@@ -51,13 +65,17 @@ const Expenses = () => {
   const fetchExpenses = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/expenses', {
-        params: {
-          page: pagination.page,
-          limit: pagination.limit,
-          search: searchTerm,
-        },
-      })
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      }
+      
+      // Add category filter if selected and not 'all'
+      if (selectedCategory && selectedCategory !== 'all') {
+        params.category = selectedCategory
+      }
+      
+      const response = await api.get('/expenses', { params })
       setExpenses(response.data.data || [])
       setPagination(prev => ({
         ...prev,
@@ -203,26 +221,53 @@ const Expenses = () => {
           <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
           <p className="text-gray-600 mt-1">Manage all expenses</p>
         </div>
-        <Button onClick={handleCreate} variant="primary">
-          <Plus className="h-5 w-5 mr-2" />
-          Add Expense
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleCreate} variant="primary">
+            <Plus className="h-5 w-5 mr-2" />
+            Add Expense
+          </Button>
+          <Button onClick={fetchExpenses} variant="outline">
+            <RefreshCw className="h-5 w-5 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <Card>
         <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Search expenses..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setPagination(prev => ({ ...prev, page: 1 }))
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+          <div className="flex gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search expenses..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setPagination(prev => ({ ...prev, page: 1 }))
+                }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            
+            {/* Category Filter */}
+            <div className="w-48">
+              <select
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value)
+                  setPagination(prev => ({ ...prev, page: 1 }))
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                {EXPENSE_CATEGORIES.map(cat => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
