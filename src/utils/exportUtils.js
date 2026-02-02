@@ -353,3 +353,229 @@ export const exportToExcel = (memo, selectedDate, previousBalance) => {
   XLSX.writeFile(wb, fileName)
 }
 
+/**
+ * Export Transaction History to PDF
+ */
+export const exportTransactionHistoryToPDF = (transactions, entityName, entityType, filters = {}) => {
+  const doc = new jsPDF('p', 'mm', 'a4')
+
+  // Ensure autotable is available (ESM import)
+  if (!autoTable) {
+    console.error('jspdf-autotable plugin not loaded')
+    alert('PDF export plugin not available. Please refresh the page.')
+    return
+  }
+
+  // ===== HEADER =====
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.text(`${entityType === 'customer' ? 'Customer' : 'Supplier'} Transaction History`, 105, 15, { align: 'center' })
+
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`${entityType === 'customer' ? 'Customer' : 'Supplier'}: ${entityName}`, 105, 25, { align: 'center' })
+
+  // Filter information
+  if (filters.startDate || filters.endDate) {
+    doc.setFontSize(10)
+    let filterText = 'Period: '
+    if (filters.startDate) filterText += formatDateForExport(filters.startDate).date
+    if (filters.startDate && filters.endDate) filterText += ' to '
+    if (filters.endDate) filterText += formatDateForExport(filters.endDate).date
+    doc.text(filterText, 105, 32, { align: 'center' })
+  }
+
+  // ===== PREPARE DATA =====
+  const tableData = transactions.map(transaction => [
+    formatDateForExport(transaction.date || transaction.createdAt).date,
+    transaction.type || 'N/A',
+    transaction.description || 'No description',
+    transaction.source || 'Manual Entry',
+    transaction.paymentMethod || 'N/A',
+    formatCurrencyForExport(transaction.amount || 0)
+  ])
+
+  // Calculate totals
+  const totalCredit = transactions
+    .filter(t => t.type === 'credit')
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
+  
+  const totalDebit = transactions
+    .filter(t => t.type === 'debit')
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
+
+  const balance = entityType === 'customer' 
+    ? totalCredit - totalDebit 
+    : totalDebit - totalCredit
+
+  // Add summary rows
+  tableData.push([
+    { content: 'TOTAL CREDIT', styles: { fontStyle: 'bold', fillColor: [240, 255, 240] } },
+    '',
+    '',
+    '',
+    '',
+    { content: formatCurrencyForExport(totalCredit), styles: { fontStyle: 'bold', halign: 'right', fillColor: [240, 255, 240] } }
+  ])
+  
+  tableData.push([
+    { content: 'TOTAL DEBIT', styles: { fontStyle: 'bold', fillColor: [255, 240, 240] } },
+    '',
+    '',
+    '',
+    '',
+    { content: formatCurrencyForExport(totalDebit), styles: { fontStyle: 'bold', halign: 'right', fillColor: [255, 240, 240] } }
+  ])
+  
+  tableData.push([
+    { content: 'NET BALANCE', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+    '',
+    '',
+    '',
+    '',
+    { content: formatCurrencyForExport(balance), styles: { fontStyle: 'bold', halign: 'right', fillColor: [240, 240, 240] } }
+  ])
+
+  // ===== TABLE =====
+  autoTable(doc, {
+    startY: 40,
+    head: [['Date', 'Type', 'Description', 'Source', 'Payment Method', 'Amount']],
+    body: tableData,
+    theme: 'grid',
+    styles: {
+      font: 'helvetica',
+      fontSize: 8,
+      cellPadding: 2,
+      valign: 'middle',
+      lineWidth: 0.1,
+      lineColor: [0, 0, 0]
+    },
+    headStyles: {
+      fillColor: [240, 240, 240],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      fontSize: 9
+    },
+    columnStyles: {
+      0: { cellWidth: 25, halign: 'left' },  // Date
+      1: { cellWidth: 20, halign: 'center' }, // Type
+      2: { cellWidth: 50, halign: 'left' },  // Description
+      3: { cellWidth: 25, halign: 'left' },  // Source
+      4: { cellWidth: 25, halign: 'left' },  // Payment Method
+      5: { cellWidth: 30, halign: 'right' }  // Amount
+    }
+  })
+
+  // Save PDF
+  const fileName = `${entityType}_Transaction_History_${entityName.replace(/\s+/g, '_')}_${formatDateForExport(new Date()).date}.pdf`
+  doc.save(fileName)
+}
+
+/**
+ * Export Transaction History to Excel
+ */
+export const exportTransactionHistoryToExcel = (transactions, entityName, entityType, filters = {}) => {
+  const wb = XLSX.utils.book_new()
+  
+  // Main transaction data
+  const transactionData = [
+    [`${entityType === 'customer' ? 'Customer' : 'Supplier'} Transaction History`],
+    [`${entityType === 'customer' ? 'Customer' : 'Supplier'}: ${entityName}`],
+    [],
+    ['Filter Information']
+  ]
+  
+  // Add filter info if any
+  if (filters.startDate || filters.endDate) {
+    transactionData.push(['Period:', filters.startDate ? formatDateForExport(filters.startDate).date : 'Start', 
+                         'to:', filters.endDate ? formatDateForExport(filters.endDate).date : 'End'])
+  }
+  if (filters.transactionType) {
+    transactionData.push(['Transaction Type:', filters.transactionType])
+  }
+  if (filters.source) {
+    transactionData.push(['Source:', filters.source])
+  }
+  if (filters.minAmount || filters.maxAmount) {
+    transactionData.push(['Amount Range:', filters.minAmount || '0', 'to', filters.maxAmount || 'Unlimited'])
+  }
+  
+  transactionData.push([])
+  transactionData.push(['Transaction Details'])
+  transactionData.push(['Date', 'Type', 'Description', 'Source', 'Payment Method', 'Amount', 'Reference'])
+  
+  // Add transaction rows
+  transactions.forEach(transaction => {
+    transactionData.push([
+      formatDateForExport(transaction.date || transaction.createdAt).date,
+      transaction.type || 'N/A',
+      transaction.description || 'No description',
+      transaction.source || 'Manual Entry',
+      transaction.paymentMethod || 'N/A',
+      transaction.amount || 0,
+      transaction.reference || ''
+    ])
+  })
+  
+  // Add summary
+  transactionData.push([])
+  transactionData.push(['Summary'])
+  
+  const totalCredit = transactions
+    .filter(t => t.type === 'credit')
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
+  
+  const totalDebit = transactions
+    .filter(t => t.type === 'debit')
+    .reduce((sum, t) => sum + (t.amount || 0), 0)
+
+  const balance = entityType === 'customer' 
+    ? totalCredit - totalDebit 
+    : totalDebit - totalCredit
+
+  transactionData.push(['Total Credit:', '', '', '', '', '', totalCredit])
+  transactionData.push(['Total Debit:', '', '', '', '', '', totalDebit])
+  transactionData.push(['Net Balance:', '', '', '', '', '', balance])
+  
+  const ws = XLSX.utils.aoa_to_sheet(transactionData)
+  
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 15 }, // Date
+    { wch: 12 }, // Type
+    { wch: 40 }, // Description
+    { wch: 20 }, // Source
+    { wch: 15 }, // Payment Method
+    { wch: 15 }, // Amount
+    { wch: 20 }  // Reference
+  ]
+  
+  XLSX.utils.book_append_sheet(wb, ws, 'Transaction History')
+  
+  // Create separate summary sheet
+  const summaryData = [
+    [`${entityType === 'customer' ? 'Customer' : 'Supplier'} Transaction Summary`],
+    [`${entityType === 'customer' ? 'Customer' : 'Supplier'}: ${entityName}`],
+    [],
+    ['Summary'],
+    ['Total Credit:', totalCredit],
+    ['Total Debit:', totalDebit],
+    ['Net Balance:', balance],
+    [],
+    ['Transaction Count:', transactions.length],
+    ['Export Date:', formatDateForExport(new Date()).date]
+  ]
+  
+  const summaryWs = XLSX.utils.aoa_to_sheet(summaryData)
+  summaryWs['!cols'] = [
+    { wch: 20 }, // Label
+    { wch: 20 }  // Value
+  ]
+  
+  XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary')
+  
+  // Save Excel file
+  const fileName = `${entityType}_Transaction_History_${entityName.replace(/\s+/g, '_')}_${formatDateForExport(new Date()).date}.xlsx`
+  XLSX.writeFile(wb, fileName)
+}
+
