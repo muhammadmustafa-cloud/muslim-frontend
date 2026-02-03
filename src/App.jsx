@@ -13,6 +13,7 @@ import Expenses from './pages/expenses/Expenses'
 import Mazdoors from './pages/mazdoors/Mazdoors'
 import Transactions from './pages/transactions/Transactions'
 import Accounts from './pages/accounts/Accounts'
+import Banks from './pages/banks/Banks'
 import Payments from './pages/vouchers/Payments'
 import Users from './pages/users/Users'
 import DailyCashMemo from './pages/dailyCashMemo/DailyCashMemo'
@@ -43,6 +44,7 @@ function App() {
             <Route path="mazdoors" element={<Mazdoors />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="accounts" element={<Accounts />} />
+            <Route path="banks" element={<Banks />} />
             <Route path="payments" element={<Payments />} />
             <Route path="daily-cash-memo" element={<DailyCashMemo />} />
             <Route path="labour" element={<LabourRates />} />

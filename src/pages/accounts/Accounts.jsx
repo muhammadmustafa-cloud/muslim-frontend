@@ -29,6 +29,8 @@ const Accounts = () => {
     totalBank: 0,
     totalAccounts: 0
   })
+  const [banks, setBanks] = useState([])
+  const [banksLoading, setBanksLoading] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
   const isBankAccount = watch('isBankAccount')
@@ -37,6 +39,19 @@ const Accounts = () => {
   useEffect(() => {
     fetchAccounts()
   }, [searchTerm])
+
+  const fetchBanks = async () => {
+    try {
+      setBanksLoading(true)
+      const response = await api.get('/banks', { params: { page: 1, limit: 500, isActive: true } })
+      setBanks(response.data.data || [])
+    } catch (error) {
+      toast.error('Failed to fetch banks')
+      console.error(error)
+    } finally {
+      setBanksLoading(false)
+    }
+  }
 
   const fetchAccounts = async () => {
     try {
@@ -75,6 +90,7 @@ const Accounts = () => {
       isBankAccount: false,
       openingBalance: 0,
     })
+    fetchBanks()
     setIsModalOpen(true)
   }
 
@@ -86,10 +102,12 @@ const Accounts = () => {
     setValue('openingBalance', account.openingBalance || 0)
     setValue('isCashAccount', account.isCashAccount || false)
     setValue('isBankAccount', account.isBankAccount || false)
+    setValue('bank', account.bank?._id || account.bank || '__none__')
     setValue('bankDetails.bankName', account.bankDetails?.bankName || '')
     setValue('bankDetails.accountNumber', account.bankDetails?.accountNumber || '')
     setValue('bankDetails.branch', account.bankDetails?.branch || '')
     setValue('notes', account.notes || '')
+    fetchBanks()
     setIsModalOpen(true)
   }
 
@@ -111,14 +129,14 @@ const Accounts = () => {
     try {
       const accountData = {
         ...data,
-        bankDetails: data.isBankAccount ? {
+        bank: data.isBankAccount && data.bank && data.bank !== '__none__' ? data.bank : null,
+        bankDetails: data.isBankAccount && !data.bank ? {
           bankName: data['bankDetails.bankName'],
           accountNumber: data['bankDetails.accountNumber'],
           branch: data['bankDetails.branch'],
         } : undefined,
       }
-      
-      // Clean up the data
+
       delete accountData['bankDetails.bankName']
       delete accountData['bankDetails.accountNumber']
       delete accountData['bankDetails.branch']
@@ -164,9 +182,9 @@ const Accounts = () => {
     {
       key: 'isBankAccount',
       label: 'Bank',
-      render: (value) => (
+      render: (value, row) => (
         <span className={`px-2 py-1 rounded-full text-xs ${value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-          {value ? 'Yes' : 'No'}
+          {value ? (row.bank?.name || row.bankDetails?.bankName || 'Yes') : 'No'}
         </span>
       ),
     },
@@ -362,27 +380,17 @@ const Accounts = () => {
             
             {isBankAccount && (
               <div className="space-y-4 border-t pt-4">
-                <FormInput
-                  label="Bank Name"
-                  name="bankDetails.bankName"
+                <FormSelect
+                  label="Bank"
+                  name="bank"
                   register={register}
-                  error={errors['bankDetails.bankName']?.message}
-                  placeholder="Bank name"
+                  options={[{ value: '__none__', label: 'Select a bank' }, ...banks.map((b) => ({ value: b._id, label: `${b.name} - ${b.accountNumber} (${b.branch})` }))]}
+                  error={errors.bank?.message}
+                  placeholder={banksLoading ? 'Loading banks...' : 'Select a bank'}
                 />
-                <FormInput
-                  label="Account Number"
-                  name="bankDetails.accountNumber"
-                  register={register}
-                  error={errors['bankDetails.accountNumber']?.message}
-                  placeholder="Account number"
-                />
-                <FormInput
-                  label="Branch"
-                  name="bankDetails.branch"
-                  register={register}
-                  error={errors['bankDetails.branch']?.message}
-                  placeholder="Branch name"
-                />
+                {banks.length === 0 && !banksLoading && (
+                  <p className="text-xs text-gray-500">Add banks from the Banks page first.</p>
+                )}
               </div>
             )}
             
