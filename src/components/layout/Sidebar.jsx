@@ -59,6 +59,8 @@ const Sidebar = () => {
         { path: '/labour-expenses', label: 'Labour Expenses', icon: Clock },
         { path: '/labour', label: 'Labour', icon: UsersIcon },
         { path: '/daily-cash-memo', label: 'Daily Cash Memo', icon: Receipt },
+        { path: '/customer-history', label: 'Customer History', icon: History },
+        { path: '/supplier-history', label: 'Supplier History', icon: History },
       ]
     }
   ]

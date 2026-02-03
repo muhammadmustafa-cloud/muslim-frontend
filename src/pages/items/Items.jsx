@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { Plus, Edit, Trash2, Search, AlertCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -9,7 +9,6 @@ import Select from '../../components/ui/Select'
 import Modal from '../../components/ui/Modal'
 import Table from '../../components/ui/Table'
 import api from '../../config/api'
-import { formatCurrency, formatDate } from '../../utils/formatters'
 
 const Items = () => {
   const [items, setItems] = useState([])
@@ -19,8 +18,7 @@ const Items = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 })
 
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
-  const itemType = watch('type')
+  const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm()
 
   useEffect(() => {
     fetchItems()
@@ -58,17 +56,8 @@ const Items = () => {
   const handleEdit = (item) => {
     setEditingItem(item)
     setValue('name', item.name)
-    setValue('code', item.code)
     setValue('type', item.type)
-    setValue('category', item.category || '')
-    setValue('unit', item.unit || 'kg')
-    setValue('description', item.description || '')
-    setValue('purchasePrice', item.purchasePrice || 0)
-    setValue('sellingPrice', item.sellingPrice || 0)
-    setValue('minStockLevel', item.minStockLevel || 0)
-    setValue('maxStockLevel', item.maxStockLevel || 0)
-    setValue('reorderPoint', item.reorderPoint || 0)
-    setValue('conversionRate', item.conversionRate || 1)
+    setValue('quality', item.quality || '')
     setValue('notes', item.notes || '')
     setIsModalOpen(true)
   }
@@ -105,32 +94,13 @@ const Items = () => {
   }
 
   const columns = [
-    { key: 'code', label: 'Code' },
     { key: 'name', label: 'Name' },
-    { 
-      key: 'type', 
+    {
+      key: 'type',
       label: 'Type',
       render: (value) => value?.replace('_', ' ').toUpperCase() || '-'
     },
-    { key: 'category', label: 'Category', render: (value) => value || '-' },
-    { key: 'unit', label: 'Unit' },
-    { 
-      key: 'currentStock', 
-      label: 'Stock',
-      render: (value, row) => (
-        <div className="flex items-center gap-2">
-          <span>{value || 0}</span>
-          {row.minStockLevel > 0 && value <= row.minStockLevel && (
-            <AlertCircle className="h-4 w-4 text-orange-500" title="Low stock" />
-          )}
-        </div>
-      )
-    },
-    { 
-      key: 'sellingPrice', 
-      label: 'Selling Price',
-      render: (value) => formatCurrency(value || 0)
-    },
+    { key: 'quality', label: 'Quality', render: (value) => value || '-' },
     {
       key: 'isActive',
       label: 'Status',
@@ -266,16 +236,6 @@ const Items = () => {
               error={errors.name?.message}
               placeholder="Item name"
             />
-            {editingItem && (
-              <Input
-                label="Code"
-                name="code"
-                register={register}
-                error={errors.code?.message}
-                placeholder="Item code"
-                disabled
-              />
-            )}
             <Select
               label="Type"
               name="type"
@@ -285,81 +245,11 @@ const Items = () => {
               error={errors.type?.message}
             />
             <Input
-              label="Category"
-              name="category"
+              label="Quality"
+              name="quality"
               register={register}
-              error={errors.category?.message}
-              placeholder="Item category"
-            />
-            <Select
-              label="Unit"
-              name="unit"
-              register={register}
-              required
-              options={unitOptions}
-              error={errors.unit?.message}
-            />
-            <Input
-              label="Purchase Price"
-              name="purchasePrice"
-              type="number"
-              step="0.01"
-              register={register}
-              error={errors.purchasePrice?.message}
-              placeholder="0.00"
-            />
-            <Input
-              label="Selling Price"
-              name="sellingPrice"
-              type="number"
-              step="0.01"
-              register={register}
-              error={errors.sellingPrice?.message}
-              placeholder="0.00"
-            />
-            <Input
-              label="Min Stock Level"
-              name="minStockLevel"
-              type="number"
-              register={register}
-              error={errors.minStockLevel?.message}
-              placeholder="0"
-            />
-            <Input
-              label="Max Stock Level"
-              name="maxStockLevel"
-              type="number"
-              register={register}
-              error={errors.maxStockLevel?.message}
-              placeholder="0"
-            />
-            <Input
-              label="Reorder Point"
-              name="reorderPoint"
-              type="number"
-              register={register}
-              error={errors.reorderPoint?.message}
-              placeholder="0"
-            />
-            {itemType === 'finished_product' && (
-              <Input
-                label="Conversion Rate"
-                name="conversionRate"
-                type="number"
-                step="0.01"
-                register={register}
-                error={errors.conversionRate?.message}
-                placeholder="1.0"
-              />
-            )}
-          </div>
-          <div className="mt-4">
-            <label className="label">Description</label>
-            <textarea
-              {...register('description')}
-              rows={3}
-              className="input"
-              placeholder="Item description..."
+              error={errors.quality?.message}
+              placeholder="e.g., Grade A"
             />
           </div>
           <div className="mt-4">
