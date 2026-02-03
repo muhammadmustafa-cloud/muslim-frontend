@@ -20,6 +20,8 @@ const Expenses = () => {
   const [editingExpense, setEditingExpense] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 })
+  const [viewingExpense, setViewingExpense] = useState(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
   const category = watch('category')
@@ -77,6 +79,11 @@ const Expenses = () => {
     setValue('date', new Date().toISOString().split('T')[0])
     setValue('paymentMethod', 'cash')
     setIsModalOpen(true)
+  }
+
+  const handleView = (expense) => {
+    setViewingExpense(expense)
+    setIsViewModalOpen(true)
   }
 
   const handleEdit = (expense) => {
@@ -153,15 +160,23 @@ const Expenses = () => {
       render: (value) => value?.name || '-',
     },
     { key: 'paymentMethod', label: 'Payment Method' },
+    {
+      key: 'createdBy',
+      label: 'Added by',
+      render: (value) => value?.name || '-',
+    },
   ]
 
   const actions = [
+    { key: 'view', label: 'View', variant: 'primary' },
     { key: 'edit', label: 'Edit', variant: 'primary' },
     { key: 'delete', label: 'Delete', variant: 'danger' },
   ]
 
   const handleAction = (action, expense) => {
-    if (action === 'edit') {
+    if (action === 'view') {
+      handleView(expense)
+    } else if (action === 'edit') {
       handleEdit(expense)
     } else if (action === 'delete') {
       handleDelete(expense)
@@ -198,13 +213,13 @@ const Expenses = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
-          <p className="text-gray-600 mt-1">Manage all expenses</p>
+          <h1 className="text-base font-semibold text-gray-900">Expenses</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Manage all expenses</p>
         </div>
         <Button onClick={handleCreate} variant="primary">
-          <Plus className="h-5 w-5 mr-2" />
+          <Plus className="h-4 w-4 mr-1.5" />
           Add Expense
         </Button>
       </div>
@@ -379,6 +394,92 @@ const Expenses = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* View details: Where was this expense spent? */}
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        title={viewingExpense ? `Where was ${formatCurrency(viewingExpense.amount)} spent?` : 'Expense details'}
+        size="md"
+      >
+        {viewingExpense && (
+          <div className="space-y-4">
+            {/* One-line summary: e.g. "Mazdoor Ahmed got 8,000 on 15 Jan 2025" */}
+            <div className="p-3 rounded-lg bg-primary-50 border border-primary-200">
+              <p className="text-sm font-medium text-gray-700">
+                {viewingExpense.category === 'mazdoor' && viewingExpense.mazdoor?.name ? (
+                  <>Mazdoor <span className="font-semibold">{viewingExpense.mazdoor.name}</span> got {formatCurrency(viewingExpense.amount)} on {formatDate(viewingExpense.date)}.</>
+                ) : viewingExpense.category === 'raw_material' && viewingExpense.supplier?.name ? (
+                  <>Supplier <span className="font-semibold">{viewingExpense.supplier.name}</span> — {formatCurrency(viewingExpense.amount)} on {formatDate(viewingExpense.date)}.</>
+                ) : (
+                  <><span className="font-semibold capitalize">{viewingExpense.category?.replace('_', ' ') || 'Expense'}</span> of {formatCurrency(viewingExpense.amount)} on {formatDate(viewingExpense.date)}.</>
+                )}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+              <p className="text-sm font-medium text-gray-500">Amount</p>
+              <p className="text-lg font-semibold text-gray-900">{formatCurrency(viewingExpense.amount)}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-gray-500 font-medium">Date</p>
+                <p className="text-gray-900">{formatDate(viewingExpense.date)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">Category</p>
+                <p className="text-gray-900 capitalize">{viewingExpense.category?.replace('_', ' ') || '-'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">Payment method</p>
+                <p className="text-gray-900 capitalize">{viewingExpense.paymentMethod || '-'}</p>
+              </div>
+              {viewingExpense.billNumber && (
+                <div>
+                  <p className="text-gray-500 font-medium">Bill number</p>
+                  <p className="text-gray-900">{viewingExpense.billNumber}</p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className="text-gray-500 font-medium text-sm">Description</p>
+              <p className="text-gray-900">{viewingExpense.description || '-'}</p>
+            </div>
+
+            {(viewingExpense.mazdoor?.name || viewingExpense.supplier?.name) && (
+              <div>
+                <p className="text-gray-500 font-medium text-sm">Related to</p>
+                <p className="text-gray-900">
+                  {viewingExpense.mazdoor?.name && `Mazdoor: ${viewingExpense.mazdoor.name}`}
+                  {viewingExpense.mazdoor?.name && viewingExpense.supplier?.name && ' • '}
+                  {viewingExpense.supplier?.name && `Supplier: ${viewingExpense.supplier.name}`}
+                </p>
+              </div>
+            )}
+
+            {viewingExpense.notes && (
+              <div>
+                <p className="text-gray-500 font-medium text-sm">Notes</p>
+                <p className="text-gray-900">{viewingExpense.notes}</p>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                Recorded by <span className="font-medium text-gray-700">{viewingExpense.createdBy?.name || '—'}</span>
+                {viewingExpense.createdAt && <> on {formatDate(viewingExpense.createdAt)}</>}
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+              <Button onClick={() => { handleEdit(viewingExpense); setIsViewModalOpen(false); }}>Edit</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

@@ -7,31 +7,31 @@ const Table = ({ columns, data, actions, onAction }) => {
             {columns.map((column) => (
               <th
                 key={column.key}
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-3 py-2 text-left text-[10px] font-medium text-gray-500 uppercase tracking-wider"
               >
                 {column.label}
               </th>
             ))}
-            {actions && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
+            {actions && <th className="px-3 py-2 text-right text-[10px] font-medium text-gray-500 uppercase tracking-wider">Actions</th>}
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white divide-y divide-gray-100">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-4 text-center text-gray-500">
+              <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-3 text-center text-xs text-gray-500">
                 No data available
               </td>
             </tr>
           ) : (
             data.map((row, index) => (
-              <tr key={row.id || index} className="hover:bg-gray-50">
+              <tr key={row.id || index} className="hover:bg-gray-50/80">
                 {columns.map((column) => (
-                  <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td key={column.key} className="px-3 py-2 whitespace-nowrap text-xs text-gray-900">
                     {column.render ? column.render(row[column.key], row) : row[column.key]}
                   </td>
                 ))}
                 {actions && (
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-3 py-2 whitespace-nowrap text-right text-xs font-medium">
                     {actions.map((action, idx) => (
                       <button
                         key={idx}

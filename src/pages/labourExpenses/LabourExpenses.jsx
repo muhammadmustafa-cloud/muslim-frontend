@@ -23,6 +23,8 @@ const LabourExpenses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingLabourExpense, setEditingLabourExpense] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [viewingLabourExpense, setViewingLabourExpense] = useState(null)
+  const [isViewDetailOpen, setIsViewDetailOpen] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm()
 
@@ -57,6 +59,11 @@ const LabourExpenses = () => {
       rate: ''
     })
     setIsModalOpen(true)
+  }
+
+  const handleViewLabourExpense = (labourExpense) => {
+    setViewingLabourExpense(labourExpense)
+    setIsViewDetailOpen(true)
   }
 
   const handleEditLabourExpense = (labourExpense) => {
@@ -147,10 +154,10 @@ const LabourExpenses = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Labour Expenses</h1>
+          <h1 className="text-base font-semibold text-gray-900">Labour Expenses</h1>
           <p className="text-gray-600">Manage labour expenses rates for your business</p>
         </div>
         <Button onClick={handleAddLabourExpense}>
@@ -184,9 +191,9 @@ const LabourExpenses = () => {
             columns={columns}
             data={labourExpenses}
             loading={loading}
+            onView={handleViewLabourExpense}
             onEdit={handleEditLabourExpense}
             onDelete={handleDeleteLabourExpense}
-            searchPlaceholder="Search labour expenses..."
           />
         </CardContent>
       </Card>
@@ -237,6 +244,54 @@ const LabourExpenses = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View labour expense: e.g. "Labour expense Ahmed: rate PKR 50 per unit" */}
+      <Dialog open={isViewDetailOpen} onOpenChange={setIsViewDetailOpen}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Labour expense details</DialogTitle>
+            <DialogDescription>
+              {viewingLabourExpense && (
+                <span>Rate definition — used when adding labour records</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {viewingLabourExpense && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-primary-50 border border-primary-200">
+                <p className="text-sm font-medium text-gray-700">
+                  Labour expense <span className="font-semibold">{viewingLabourExpense.name}</span>
+                  {' — rate PKR '}{Number(viewingLabourExpense.rate || 0).toFixed(2)} per unit.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-500 font-medium">Name</p>
+                  <p className="text-gray-900">{viewingLabourExpense.name}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Rate</p>
+                  <p className="text-gray-900 font-semibold text-green-600">PKR {Number(viewingLabourExpense.rate || 0).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Status</p>
+                  <p className="text-gray-900">{viewingLabourExpense.isActive ? 'Active' : 'Inactive'}</p>
+                </div>
+                {viewingLabourExpense.createdAt && (
+                  <div>
+                    <p className="text-gray-500 font-medium">Created</p>
+                    <p className="text-gray-900">{formatDate(viewingLabourExpense.createdAt)}</p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewDetailOpen(false)}>Close</Button>
+                <Button onClick={() => { handleEditLabourExpense(viewingLabourExpense); setIsViewDetailOpen(false); }}>Edit</Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

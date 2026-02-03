@@ -14,38 +14,35 @@ const Header = () => {
   const { user } = useAuth()
 
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40 backdrop-blur-sm bg-white/95 shadow-sm">
-      <div className="flex items-center justify-between px-6 py-4">
+    <header className="bg-white border-b border-gray-100 sticky top-0 z-40">
+      <div className="flex items-center justify-between px-4 py-2.5">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">Welcome back, {user?.name || 'User'}</h2>
-          <p className="text-sm text-gray-600 capitalize mt-0.5">{user?.role || 'User'}</p>
+          <h2 className="text-base font-medium text-gray-900">{user?.name || 'User'}</h2>
+          <p className="text-xs text-gray-500 capitalize">{user?.role || 'User'}</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5 text-gray-600" />
-            <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full ring-2 ring-white"></span>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Bell className="h-4 w-4 text-gray-500" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center space-x-2 h-auto py-2">
-                <div className="flex items-center space-x-2 bg-gradient-to-r from-primary-50 to-primary-100 px-4 py-2 rounded-lg border border-primary-200">
-                  <div className="bg-primary-600 p-1.5 rounded-full">
-                    <User className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="text-sm font-semibold text-gray-700">{user?.email}</span>
+              <Button variant="ghost" className="flex items-center gap-2 h-8 px-2.5 text-gray-600">
+                <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                  <User className="h-3.5 w-3.5 text-gray-600" />
                 </div>
+                <span className="text-xs max-w-[120px] truncate">{user?.email}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuContent align="end" className="w-48 text-sm">
+              <DropdownMenuLabel className="text-xs">Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem className="text-xs">
+                <User className="mr-2 h-3.5 w-3.5" />
+                Profile
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+              <DropdownMenuItem className="text-xs">
+                <Settings className="mr-2 h-3.5 w-3.5" />
+                Settings
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -29,6 +29,8 @@ const DailyCashMemo = () => {
   const [imagePreview, setImagePreview] = useState(null)
   const [selectedImage, setSelectedImage] = useState(null)
   const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [viewingEntry, setViewingEntry] = useState(null) // { entry, type: 'credit'|'debit' }
+  const [isViewEntryModalOpen, setIsViewEntryModalOpen] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch, setError, clearErrors } = useForm({
     mode: 'onChange',
@@ -306,6 +308,11 @@ const DailyCashMemo = () => {
     setIsImageModalOpen(true)
   }
 
+  const handleViewEntry = (entry, type) => {
+    setViewingEntry({ entry, type })
+    setIsViewEntryModalOpen(true)
+  }
+
   const handleSaveNotes = async (data) => {
     try {
       if (memo?._id) {
@@ -359,7 +366,7 @@ const DailyCashMemo = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Daily Cash Memo</h1>
@@ -484,6 +491,13 @@ const DailyCashMemo = () => {
                           <td className="px-4 py-3 text-center">
                             <div className="flex justify-center gap-2">
                               <button
+                                onClick={() => handleViewEntry(entry, 'credit')}
+                                className="text-primary-600 hover:text-primary-800 text-sm font-medium"
+                                aria-label={`View ${entry.name}`}
+                              >
+                                View
+                              </button>
+                              <button
                                 onClick={() => handleEditEntry(entry, 'credit')}
                                 className="text-blue-600 hover:text-blue-800 text-sm"
                                 aria-label={`Edit ${entry.name}`}
@@ -516,7 +530,7 @@ const DailyCashMemo = () => {
                 <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
                   <div className="flex justify-between items-center">
                     <p className="text-lg font-bold text-green-800">Total</p>
-                    <p className="text-2xl font-bold text-green-900">
+                    <p className="text-lg font-semibold text-green-900">
                       {formatCurrency(calculateTotalCredit())}
                     </p>
                   </div>
@@ -582,6 +596,13 @@ const DailyCashMemo = () => {
                           <td className="px-4 py-3 text-center">
                             <div className="flex justify-center gap-2">
                               <button
+                                onClick={() => handleViewEntry(entry, 'debit')}
+                                className="text-primary-600 hover:text-primary-800 text-sm font-medium"
+                                aria-label={`View ${entry.name}`}
+                              >
+                                View
+                              </button>
+                              <button
                                 onClick={() => handleEditEntry(entry, 'debit')}
                                 className="text-blue-600 hover:text-blue-800 text-sm"
                                 aria-label={`Edit ${entry.name}`}
@@ -614,7 +635,7 @@ const DailyCashMemo = () => {
                 <div className="bg-red-50 p-4 rounded-lg border-2 border-red-200">
                   <div className="flex justify-between items-center">
                     <p className="text-lg font-bold text-red-800">Total</p>
-                    <p className="text-2xl font-bold text-red-900">
+                    <p className="text-lg font-semibold text-red-900">
                       {formatCurrency(calculateTotalDebit())}
                     </p>
                   </div>
@@ -633,7 +654,7 @@ const DailyCashMemo = () => {
               <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
                 {getDayName(selectedDate)} - {formatDate(selectedDate)}
               </p>
-              <p className="text-2xl font-bold text-gray-900 mt-2">Closing Balance</p>
+              <p className="text-lg font-semibold text-gray-900 mt-1.5">Closing Balance</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600 mb-1">Total Credit - Total Debit</p>
@@ -848,6 +869,58 @@ const DailyCashMemo = () => {
               Close
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View entry details: e.g. "Ahmed — 8,000 (Cash in) on Daily Cash Memo for 15 Jan 2025" */}
+      <Dialog open={isViewEntryModalOpen} onOpenChange={setIsViewEntryModalOpen}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Entry details</DialogTitle>
+            <DialogDescription>
+              {viewingEntry && (
+                <span>
+                  {viewingEntry.type === 'credit' ? 'Cash in' : 'Cash out'} — Daily Cash Memo for {formatDate(selectedDate)}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {viewingEntry && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-primary-50 border border-primary-200">
+                <p className="text-sm font-medium text-gray-700">
+                  <span className="font-semibold">{viewingEntry.entry.name}</span>
+                  {' — '}
+                  {formatCurrency(viewingEntry.entry.amount)}
+                  {' '}({viewingEntry.type === 'credit' ? 'Cash in' : 'Cash out'}) on Daily Cash Memo for {formatDate(selectedDate)}.
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                <p className="text-sm font-medium text-gray-500">Amount</p>
+                <p className="text-xl font-bold text-gray-900">{formatCurrency(viewingEntry.entry.amount)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium text-sm">Description</p>
+                <p className="text-gray-900">{viewingEntry.entry.description || '—'}</p>
+              </div>
+              {viewingEntry.entry.image && (
+                <div>
+                  <p className="text-gray-500 font-medium text-sm mb-1">Image</p>
+                  <button
+                    type="button"
+                    onClick={() => { handleViewImage(viewingEntry.entry.image); setIsViewEntryModalOpen(false); }}
+                    className="text-primary-600 hover:text-primary-800 text-sm font-medium"
+                  >
+                    View image
+                  </button>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewEntryModalOpen(false)}>Close</Button>
+                <Button onClick={() => { handleEditEntry(viewingEntry.entry, viewingEntry.type); setIsViewEntryModalOpen(false); }}>Edit</Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

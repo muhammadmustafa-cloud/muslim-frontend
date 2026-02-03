@@ -40,46 +40,42 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary-600 mb-2">Muslim Daal Mill</h1>
-          <p className="text-gray-600">Management System</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-xs bg-white rounded-lg border border-gray-100 p-4">
+        <div className="text-center mb-4">
+          <h1 className="text-base font-semibold text-gray-900">Muslim Daal Mill</h1>
+          <p className="text-[10px] text-gray-500 mt-0.5">Sign in</p>
         </div>
 
         <form onSubmit={handleFormSubmit}>
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email
-            </label>
+          <div className="mb-2.5">
+            <label htmlFor="email" className="block text-[10px] font-medium text-gray-600 mb-0.5">Email</label>
             <input
               id="email"
               name="email"
               type="email"
               required
-              placeholder="Enter your email"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Email"
+              className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
+          <div className="mb-3">
+            <label htmlFor="password" className="block text-[10px] font-medium text-gray-600 mb-0.5">Password</label>
             <input
               id="password"
               name="password"
               type="password"
               required
-              placeholder="Enter your password"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Password"
+              className="w-full px-3 py-1.5 text-xs border border-gray-200 rounded-md focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white hover:from-primary-700 hover:to-primary-800 focus-visible:ring-primary-500 inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 shadow-sm hover:shadow-md active:scale-[0.98] h-11 px-6 py-2.5"
+            className="w-full bg-primary-600 text-white hover:bg-primary-700 rounded-md text-xs font-medium h-8 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50"
           >
             {loading ? (
               <span className="flex items-center gap-2">
