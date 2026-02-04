@@ -247,6 +247,16 @@ const Payments = () => {
       label: 'Date',
       render: (value) => formatDate(value),
     },
+    {
+      key: 'source',
+      label: 'Source',
+      render: (value) =>
+        value === 'daily_cash_memo' ? (
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="Created from Daily Cash Memo">Daily Cash Memo</span>
+        ) : (
+          <span className="text-gray-400 text-xs">—</span>
+        ),
+    },
   ]
 
   const accountOptions = accounts.map(acc => ({
@@ -292,9 +302,9 @@ const Payments = () => {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Payments & Receipts</h1>
           <p className="text-gray-600 mt-1.5">
-            Record money going out (payments) and non-sale money coming in (receipts like loans, refunds, etc.)
+            Record money going out (payments) and money coming in (receipts). Entries added from Daily Cash Memo appear here with &quot;Daily Cash Memo&quot; in Source.
             <br />
-            <span className="text-sm text-primary-600 font-medium">Note: For customer sales, use the Transactions page</span>
+            <span className="text-sm text-primary-600 font-medium">Note: For item sales/purchases use the Transactions page</span>
           </p>
         </div>
         <div className="flex gap-2">

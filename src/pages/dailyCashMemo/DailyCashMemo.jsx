@@ -30,6 +30,13 @@ const EXPENSE_CATEGORIES = [
   { value: 'supplier_payment', label: 'Supplier Payment' }
 ]
 
+const CREDIT_CATEGORIES = [
+  { value: 'customer_payment', label: 'Customer Payment' },
+  { value: 'sale', label: 'Sale / Item Sold' },
+  { value: 'other_income', label: 'Other Income' },
+  { value: 'general', label: 'General Receipt' }
+]
+
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'Cash' },
   { value: 'cheque', label: 'Cheque' },
@@ -60,11 +67,6 @@ const DailyCashMemo = () => {
   const [suppliers, setSuppliers] = useState([])
   const [loadingDropdowns, setLoadingDropdowns] = useState(false)
 
-  // Debug: Log suppliers state changes
-  useEffect(() => {
-    console.log('Suppliers state updated:', suppliers)
-  }, [suppliers])
-
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch, setError, clearErrors, control } = useForm({
     mode: 'onChange',
     defaultValues: {
@@ -72,6 +74,7 @@ const DailyCashMemo = () => {
       description: '',
       amount: '',
       account: '',
+      creditCategory: '',
       category: '',
       mazdoor: '',
       customer: '',
@@ -83,6 +86,7 @@ const DailyCashMemo = () => {
 
   const watchedValues = watch()
   const selectedCategory = watch('category')
+  const selectedCreditCategory = watch('creditCategory')
   const notes = watch('notes')
 
   useEffect(() => {
@@ -90,6 +94,36 @@ const DailyCashMemo = () => {
     fetchPreviousBalance()
     fetchDropdownData()
   }, [selectedDate])
+
+  // Clear customer when credit receipt type doesn't need it
+  useEffect(() => {
+    if (entryType === 'credit' && selectedCreditCategory && !['customer_payment', 'sale'].includes(selectedCreditCategory)) {
+      setValue('customer', '__none__')
+    }
+  }, [entryType, selectedCreditCategory, setValue])
+
+  // Auto-fill name from selected entity (no need to type name again when selecting from database)
+  const selectedMazdoorId = watch('mazdoor')
+  const selectedCustomerId = watch('customer')
+  const selectedSupplierId = watch('supplier')
+  useEffect(() => {
+    if (entryType === 'debit' && selectedCategory === 'mazdoor' && selectedMazdoorId && selectedMazdoorId !== '__none__') {
+      const m = mazdoors.find(x => x._id === selectedMazdoorId)
+      if (m?.name) setValue('name', m.name)
+    }
+  }, [entryType, selectedCategory, selectedMazdoorId, mazdoors, setValue])
+  useEffect(() => {
+    if (entryType === 'credit' && selectedCreditCategory && ['customer_payment', 'sale'].includes(selectedCreditCategory) && selectedCustomerId && selectedCustomerId !== '__none__') {
+      const c = customers.find(x => x._id === selectedCustomerId)
+      if (c?.name) setValue('name', c.name)
+    }
+  }, [entryType, selectedCreditCategory, selectedCustomerId, customers, setValue])
+  useEffect(() => {
+    if (entryType === 'debit' && ['supplier_payment', 'raw_material'].includes(selectedCategory) && selectedSupplierId && selectedSupplierId !== '__none__') {
+      const s = suppliers.find(x => x._id === selectedSupplierId)
+      if (s?.name) setValue('name', s.name)
+    }
+  }, [entryType, selectedCategory, selectedSupplierId, suppliers, setValue])
 
   // Fetch dropdown data
   const fetchDropdownData = async () => {
@@ -102,24 +136,12 @@ const DailyCashMemo = () => {
         api.get('/suppliers')
       ])
       
-      console.log('Mazdoors response:', mazdoorsRes.data);
-      console.log('Customers response:', customersRes.data);
-      console.log('Suppliers response:', suppliersRes.data);
       setAccounts(accountsRes.data.data.accounts || [])
-      setMazdoors(mazdoorsRes.data.data || mazdoorsRes.data.data.mazdoors || [])
-      
-      // Handle different response structures for customers
+      setMazdoors(mazdoorsRes.data.data || mazdoorsRes.data.data?.mazdoors || [])
       const customersData = customersRes.data.data || customersRes.data.customers || customersRes.data || []
-      console.log('Customers data extracted:', customersData)
-      setCustomers(customersData)
-      
-      // Handle different response structures for suppliers
+      setCustomers(Array.isArray(customersData) ? customersData : [])
       const suppliersData = suppliersRes.data.data || suppliersRes.data.suppliers || suppliersRes.data || []
-      console.log('Suppliers data extracted:', suppliersData)
-      setSuppliers(suppliersData)
-      
-      console.log('Final customers state:', customersData)
-      console.log('Final suppliers state:', suppliersData)
+      setSuppliers(Array.isArray(suppliersData) ? suppliersData : [])
     } catch (error) {
       console.error('Error fetching dropdown data:', error)
       toast.error('Failed to load dropdown data')
@@ -142,9 +164,7 @@ const DailyCashMemo = () => {
   const fetchMemo = async () => {
     try {
       setLoading(true)
-      console.log('Fetching memo for date:', selectedDate)
       const response = await api.get(`/daily-cash-memos/date/${selectedDate}`)
-      console.log('Memo response:', response.data)
       setMemo(response.data.data.memo)
       setValue('notes', response.data.data.memo.notes || '')
     } catch (error) {
@@ -182,6 +202,7 @@ const DailyCashMemo = () => {
       description: '',
       amount: '',
       account: '',
+      creditCategory: '',
       category: '',
       mazdoor: '',
       customer: '',
@@ -201,10 +222,11 @@ const DailyCashMemo = () => {
       description: entry.description || '',
       amount: entry.amount,
       account: entry.account?._id || entry.account || '',
+      creditCategory: entry.receiptType || '',
       category: entry.category || '',
-      mazdoor: entry.mazdoor?._id || entry.mazdoor || '',
-      customer: entry.customer?._id || entry.customer || '',
-      supplier: entry.supplier?._id || entry.supplier || '',
+      mazdoor: entry.mazdoor?._id || entry.mazdoor || '__none__',
+      customer: entry.customer?._id || entry.customer || '__none__',
+      supplier: entry.supplier?._id || entry.supplier || '__none__',
       paymentMethod: entry.paymentMethod || 'cash',
       notes: memo?.notes || ''
     })
@@ -308,14 +330,26 @@ const DailyCashMemo = () => {
       validationErrors.amount = { message: 'Please enter a valid amount greater than zero' }
     }
     
+    if (entryType === 'credit' && !data.creditCategory) {
+      validationErrors.creditCategory = { message: 'Receipt type is required for credit entries' }
+    }
     if (entryType === 'credit' && !data.account) {
       validationErrors.account = { message: 'Account is required for credit entries' }
+    }
+    if (entryType === 'credit' && data.creditCategory === 'customer_payment' && (!data.customer || data.customer === '__none__')) {
+      validationErrors.customer = { message: 'Customer is required when receipt type is Customer Payment' }
     }
     
     if (entryType === 'debit' && !data.category) {
       validationErrors.category = { message: 'Category is required for debit entries' }
     }
-    
+    if (entryType === 'debit' && data.category === 'mazdoor' && !data.mazdoor) {
+      validationErrors.mazdoor = { message: 'Mazdoor is required when category is Mazdoor' }
+    }
+    if (entryType === 'debit' && data.category === 'supplier_payment' && !data.supplier) {
+      validationErrors.supplier = { message: 'Supplier is required when category is Supplier Payment' }
+    }
+
     if (Object.keys(validationErrors).length > 0) {
       Object.entries(validationErrors).forEach(([field, error]) => {
         setError(field, { type: 'manual', message: error.message })
@@ -333,26 +367,23 @@ const DailyCashMemo = () => {
         image: imagePreview || undefined
       }
 
-      // Add type-specific fields
+      // Add type-specific fields (map __none__ to null for Select placeholders)
       if (entryType === 'credit') {
+        entryData.receiptType = data.creditCategory || null
         entryData.account = data.account
-        entryData.customer = data.customer || null
+        entryData.customer = (data.customer && data.customer !== '__none__') ? data.customer : null
       } else {
         entryData.category = data.category
-        entryData.mazdoor = data.mazdoor || null
-        entryData.supplier = data.supplier || null
+        entryData.mazdoor = (data.mazdoor && data.mazdoor !== '__none__') ? data.mazdoor : null
+        entryData.supplier = (data.supplier && data.supplier !== '__none__') ? data.supplier : null
       }
 
       // Use new API endpoints for dual-entry functionality
       if (memo?._id) {
-        console.log('Adding entry to existing memo:', memo._id, 'Type:', entryType, 'Data:', entryData)
-        
         if (entryType === 'credit') {
-          const response = await api.post(`/daily-cash-memos/${memo._id}/credit`, entryData)
-          console.log('Credit entry response:', response.data)
+          await api.post(`/daily-cash-memos/${memo._id}/credit`, entryData)
         } else {
-          const response = await api.post(`/daily-cash-memos/${memo._id}/debit`, entryData)
-          console.log('Debit entry response:', response.data)
+          await api.post(`/daily-cash-memos/${memo._id}/debit`, entryData)
         }
         
         toast.success(`${entryType === 'credit' ? 'Credit' : 'Debit'} entry added successfully`)
@@ -485,6 +516,11 @@ const DailyCashMemo = () => {
   const getCategoryLabel = (category) => {
     const cat = EXPENSE_CATEGORIES.find(c => c.value === category)
     return cat ? cat.label : category
+  }
+
+  const getReceiptTypeLabel = (receiptType) => {
+    const rt = CREDIT_CATEGORIES.find(c => c.value === receiptType)
+    return rt ? rt.label : receiptType || '-'
   }
 
   const handleAddBulkEntry = () => {
@@ -801,6 +837,7 @@ const DailyCashMemo = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-700">Receipt Type</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Name</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Description</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">Account</th>
@@ -813,6 +850,9 @@ const DailyCashMemo = () => {
                 <tbody>
                   {memo.creditEntries.map((entry, index) => (
                     <tr key={entry._id || index} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {getReceiptTypeLabel(entry.receiptType)}
+                      </td>
                       <td className="py-3 px-4">
                         <div className="font-medium text-gray-900">{entry.name}</div>
                         {entry.createdAt && (
@@ -875,7 +915,7 @@ const DailyCashMemo = () => {
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-50 font-semibold">
-                    <td colSpan="5" className="py-3 px-4 text-right">Total Credit:</td>
+                    <td colSpan="6" className="py-3 px-4 text-right">Total Credit:</td>
                     <td className="py-3 px-4 text-right text-green-600">
                       +{formatCurrency(calculateTotalCredit())}
                     </td>
@@ -1023,6 +1063,119 @@ const DailyCashMemo = () => {
           </DialogHeader>
           
           <form onSubmit={handleSubmit(onEntrySubmit)} className="space-y-4">
+            {/* Category / Receipt Type first - then relevant fields appear */}
+            {entryType === 'credit' ? (
+              <>
+                <SelectWrapper
+                  label="Receipt Type (Category)"
+                  name="creditCategory"
+                  register={register}
+                  error={errors.creditCategory?.message}
+                  required
+                  placeholder="Select receipt type first"
+                  options={CREDIT_CATEGORIES}
+                />
+
+                <SelectWrapper
+                  label="Account"
+                  name="account"
+                  register={register}
+                  error={errors.account?.message}
+                  required
+                  placeholder="Select account"
+                  options={accounts.map(acc => ({
+                    value: acc._id,
+                    label: `${acc.code} - ${acc.name}`
+                  }))}
+                  loading={loadingDropdowns ? 'true' : undefined}
+                />
+
+                {selectedCreditCategory === 'customer_payment' && (
+                  <>
+                    <SelectWrapper
+                      label="Customer (required)"
+                      name="customer"
+                      register={register}
+                      error={errors.customer?.message}
+                      required
+                      placeholder={customers.length === 0 ? 'No customers available' : 'Select customer'}
+                      options={[{ value: '__none__', label: 'Select customer' }, ...customers.map(cust => ({ value: cust._id, label: cust.name }))]}
+                      loading={loadingDropdowns ? 'true' : undefined}
+                    />
+                    {customers.length === 0 && !loadingDropdowns && (
+                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          No customers found. 
+                          <a href="/customers" className="text-blue-600 hover:text-blue-800 underline ml-1">
+                            Create customers here
+                          </a>
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                {selectedCreditCategory === 'sale' && (
+                  <SelectWrapper
+                    label="Customer (optional)"
+                    name="customer"
+                    register={register}
+                    placeholder={customers.length === 0 ? 'No customers available' : 'Select customer'}
+                    options={[{ value: '__none__', label: 'Select customer' }, ...customers.map(cust => ({ value: cust._id, label: cust.name }))]}
+                    loading={loadingDropdowns ? 'true' : undefined}
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <SelectWrapper
+                  label="Category"
+                  name="category"
+                  register={register}
+                  error={errors.category?.message}
+                  required
+                  placeholder="Select category first"
+                  options={EXPENSE_CATEGORIES}
+                />
+
+                {selectedCategory === 'mazdoor' && (
+                  <SelectWrapper
+                    label="Mazdoor (required)"
+                    name="mazdoor"
+                    register={register}
+                    required
+                    placeholder="Select mazdoor"
+                    options={[{ value: '__none__', label: 'Select mazdoor' }, ...mazdoors.map(m => ({ value: m._id, label: m.name }))]}
+                    error={errors.mazdoor?.message}
+                    loading={loadingDropdowns ? 'true' : undefined}
+                  />
+                )}
+
+                {['supplier_payment', 'raw_material'].includes(selectedCategory) && (
+                  <SelectWrapper
+                    label={selectedCategory === 'supplier_payment' ? 'Supplier (required)' : 'Supplier (optional)'}
+                    name="supplier"
+                    register={register}
+                    required={selectedCategory === 'supplier_payment'}
+                    placeholder={suppliers.length === 0 ? 'No suppliers available' : 'Select supplier'}
+                    options={[{ value: '__none__', label: 'Select supplier' }, ...suppliers.map(s => ({ value: s._id, label: s.name }))]}
+                    error={errors.supplier?.message}
+                    loading={loadingDropdowns ? 'true' : undefined}
+                  />
+                )}
+                
+                {suppliers.length === 0 && !loadingDropdowns && ['supplier_payment', 'raw_material'].includes(selectedCategory) && (
+                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      No suppliers found. 
+                      <a href="/suppliers" className="text-blue-600 hover:text-blue-800 underline ml-1">
+                        Create suppliers here
+                      </a>
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormInput
                 label="Name"
@@ -1032,7 +1185,6 @@ const DailyCashMemo = () => {
                 required
                 placeholder="Enter entry name"
               />
-              
               <FormInput
                 label="Amount"
                 name="amount"
@@ -1052,98 +1204,6 @@ const DailyCashMemo = () => {
               error={errors.description}
               placeholder="Enter description (optional)"
             />
-
-            {entryType === 'credit' ? (
-              <>
-                <SelectWrapper
-                  label="Account"
-                  name="account"
-                  register={register}
-                  error={errors.account?.message}
-                  required
-                  placeholder="Select account"
-                  options={accounts.map(acc => ({
-                    value: acc._id,
-                    label: `${acc.code} - ${acc.name}`
-                  }))}
-                  loading={loadingDropdowns ? 'true' : undefined}
-                />
-
-                <SelectWrapper
-                  label="Customer (Optional)"
-                  name="customer"
-                  register={register}
-                  placeholder={customers.length === 0 ? "No customers available" : "Select customer"}
-                  options={customers.length === 0 ? [] : customers.map(cust => ({
-                    value: cust._id,
-                    label: cust.name
-                  }))}
-                  loading={loadingDropdowns ? 'true' : undefined}
-                />
-                
-                {customers.length === 0 && !loadingDropdowns && (
-                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
-                      No customers found. 
-                      <a href="/customers" className="text-blue-600 hover:text-blue-800 underline ml-1">
-                        Create customers here
-                      </a>
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <SelectWrapper
-                  label="Category"
-                  name="category"
-                  register={register}
-                  error={errors.category?.message}
-                  required
-                  placeholder="Select category"
-                  options={EXPENSE_CATEGORIES}
-                />
-
-                {selectedCategory === 'mazdoor' && (
-                  <SelectWrapper
-                    label="Mazdoor"
-                    name="mazdoor"
-                    register={register}
-                    placeholder="Select mazdoor"
-                    options={mazdoors.map(m => ({
-                      value: m._id,
-                      label: m.name
-                    }))}
-                    loading={loadingDropdowns ? 'true' : undefined}
-                  />
-                )}
-
-                {['supplier_payment', 'raw_material'].includes(selectedCategory) && (
-                  <SelectWrapper
-                    label="Supplier"
-                    name="supplier"
-                    register={register}
-                    placeholder={suppliers.length === 0 ? "No suppliers available" : "Select supplier"}
-                    options={suppliers.length === 0 ? [] : suppliers.map(s => ({
-                      value: s._id,
-                      label: s.name
-                    }))}
-                    loading={loadingDropdowns ? 'true' : undefined}
-                  />
-                )}
-                
-                {suppliers.length === 0 && !loadingDropdowns && ['supplier_payment', 'raw_material'].includes(selectedCategory) && (
-                  <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
-                      No suppliers found. 
-                      <a href="/suppliers" className="text-blue-600 hover:text-blue-800 underline ml-1">
-                        Create suppliers here
-                      </a>
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
 
             <SelectWrapper
                   label="Payment Method"

@@ -151,7 +151,7 @@ const LabourExpenses = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Labour Expenses</h1>
-          <p className="text-gray-600">Manage labour expenses rates for your business</p>
+          <p className="text-gray-600">Labour expense types (name & rate). Mazdoor salary payments from Daily Cash Memo appear in <strong>Expenses</strong> (category: Mazdoor) and <strong>Payments</strong>.</p>
         </div>
         <Button onClick={handleAddLabourExpense}>
           <Plus className="h-4 w-4 mr-2" />

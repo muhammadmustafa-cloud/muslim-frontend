@@ -579,3 +579,89 @@ export const exportTransactionHistoryToExcel = (transactions, entityName, entity
   XLSX.writeFile(wb, fileName)
 }
 
+/**
+ * Export Entries Report to PDF
+ */
+export const exportEntriesReportToPDF = (entries, summary, startDate, endDate, categoryLabel) => {
+  const doc = new jsPDF('l', 'mm', 'a4')
+  if (!autoTable) {
+    alert('PDF export plugin not available.')
+    return
+  }
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(14)
+  doc.text('Entries Report', 148, 12, { align: 'center' })
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`From: ${startDate}  To: ${endDate}${categoryLabel ? `  |  Category: ${categoryLabel}` : ''}`, 14, 18)
+  doc.text(`Total Credit: ${formatCurrencyForExport(summary?.totalCredit || 0)}  |  Total Debit: ${formatCurrencyForExport(summary?.totalDebit || 0)}  |  Balance: ${formatCurrencyForExport(summary?.closingBalance || 0)}  |  Records: ${summary?.count || 0}`, 14, 24)
+
+  const headers = [['Date', 'Type', 'Category', 'Name', 'Description', 'Account/Customer', 'Mazdoor/Supplier', 'Payment', 'Amount']]
+  const rows = (entries || []).map(e => [
+    e.date,
+    e.type === 'credit' ? 'Credit' : 'Debit',
+    e.category || '-',
+    e.name || '',
+    (e.description || '').substring(0, 25),
+    e.type === 'credit' ? (e.account || e.customer || '-') : '-',
+    e.type === 'debit' ? (e.mazdoor || e.supplier || '-') : '-',
+    e.paymentMethod || '-',
+    (e.type === 'credit' ? '+' : '-') + formatCurrencyForExport(e.amount)
+  ])
+
+  autoTable(doc, {
+    startY: 28,
+    head: headers,
+    body: rows,
+    theme: 'grid',
+    styles: { fontSize: 7, cellPadding: 1.5 },
+    headStyles: { fillColor: [240, 240, 240], fontStyle: 'bold' },
+    columnStyles: {
+      0: { cellWidth: 22 },
+      1: { cellWidth: 18 },
+      2: { cellWidth: 22 },
+      3: { cellWidth: 28 },
+      4: { cellWidth: 28 },
+      5: { cellWidth: 28 },
+      6: { cellWidth: 25 },
+      7: { cellWidth: 18 },
+      8: { cellWidth: 22, halign: 'right' }
+    }
+  })
+
+  doc.save(`Entries_Report_${startDate}_to_${endDate}.pdf`)
+}
+
+/**
+ * Export Entries Report to Excel
+ */
+export const exportEntriesReportToExcel = (entries, summary, startDate, endDate) => {
+  const wb = XLSX.utils.book_new()
+  const headers = ['Date', 'Type', 'Category', 'Name', 'Description', 'Account/Customer', 'Mazdoor/Supplier', 'Payment Method', 'Amount']
+  const rows = (entries || []).map(e => [
+    e.date,
+    e.type === 'credit' ? 'Credit' : 'Debit',
+    e.category || '',
+    e.name || '',
+    e.description || '',
+    e.type === 'credit' ? (e.account || e.customer || '') : '',
+    e.type === 'debit' ? (e.mazdoor || e.supplier || '') : '',
+    e.paymentMethod || '',
+    e.amount || 0
+  ])
+  const data = [
+    ['Entries Report'],
+    [`From: ${startDate}  To: ${endDate}`],
+    ['Total Credit', summary?.totalCredit || 0],
+    ['Total Debit', summary?.totalDebit || 0],
+    ['Balance', summary?.closingBalance || 0],
+    ['Record Count', summary?.count || 0],
+    [],
+    headers,
+    ...rows
+  ]
+  const ws = XLSX.utils.aoa_to_sheet(data)
+  ws['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 22 }, { wch: 28 }, { wch: 22 }, { wch: 22 }, { wch: 14 }, { wch: 14 }]
+  XLSX.utils.book_append_sheet(wb, ws, 'Entries')
+  XLSX.writeFile(wb, `Entries_Report_${startDate}_to_${endDate}.xlsx`)
+}

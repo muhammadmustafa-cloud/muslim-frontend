@@ -17,6 +17,7 @@ import Banks from './pages/banks/Banks'
 import Payments from './pages/vouchers/Payments'
 import Users from './pages/users/Users'
 import DailyCashMemo from './pages/dailyCashMemo/DailyCashMemo'
+import EntriesReport from './pages/entriesReport/EntriesReport'
 import LabourRates from './pages/labourRates/LabourRates'
 import LabourExpenses from './pages/labourExpenses/LabourExpenses'
 import CustomerHistory from './pages/customers/CustomerHistory'
@@ -49,6 +50,7 @@ function App() {
             <Route path="banks" element={<Banks />} />
             <Route path="payments" element={<Payments />} />
             <Route path="daily-cash-memo" element={<DailyCashMemo />} />
+            <Route path="entries-report" element={<EntriesReport />} />
             <Route path="labour" element={<LabourRates />} />
             <Route path="labour-expenses" element={<LabourExpenses />} />
             <Route path="customer-history" element={<CustomerHistory />} />

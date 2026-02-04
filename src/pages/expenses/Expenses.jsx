@@ -171,6 +171,16 @@ const Expenses = () => {
       render: (value) => value?.name || '-',
     },
     { key: 'paymentMethod', label: 'Payment Method' },
+    {
+      key: 'source',
+      label: 'Source',
+      render: (value) =>
+        value === 'daily_cash_memo' ? (
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="Created from Daily Cash Memo">Daily Cash Memo</span>
+        ) : (
+          <span className="text-gray-400 text-xs">—</span>
+        ),
+    },
   ]
 
   const actions = [
@@ -219,7 +229,7 @@ const Expenses = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
-          <p className="text-gray-600 mt-1">Manage all expenses</p>
+          <p className="text-gray-600 mt-1">Manage all expenses. Debit entries from Daily Cash Memo (mazdoor, rent, transport, etc.) appear here with &quot;Daily Cash Memo&quot; in Source.</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleCreate} variant="primary">

@@ -16,7 +16,9 @@ import {
   UsersIcon,
   Clock,
   Package2,
-  Landmark
+  Landmark,
+  History,
+  FileBarChart
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { cn } from '../../lib/utils'
@@ -59,6 +61,7 @@ const Sidebar = () => {
         { path: '/labour-expenses', label: 'Labour Expenses', icon: Clock },
         { path: '/labour', label: 'Labour', icon: UsersIcon },
         { path: '/daily-cash-memo', label: 'Daily Cash Memo', icon: Receipt },
+        { path: '/entries-report', label: 'Entries Report', icon: FileBarChart },
         { path: '/customer-history', label: 'Customer History', icon: History },
         { path: '/supplier-history', label: 'Supplier History', icon: History },
       ]
