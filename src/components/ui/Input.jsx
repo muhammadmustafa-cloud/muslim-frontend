@@ -7,11 +7,11 @@ const Input = React.forwardRef(({ className, type = "text", label, name, id, req
   // If register is provided, use it to register the input
   const registerProps = register ? register(name) : {};
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-semibold text-gray-700">
+        <label htmlFor={inputId} className="block text-xs font-medium text-gray-600">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       <input
@@ -19,12 +19,12 @@ const Input = React.forwardRef(({ className, type = "text", label, name, id, req
         id={inputId}
         name={name}
         className={cn(
-          "flex h-11 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm",
+          "flex h-8 w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs",
           "placeholder:text-gray-400",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2",
+          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500 focus-visible:ring-offset-0",
           "disabled:cursor-not-allowed disabled:opacity-50",
-          "transition-all duration-200",
-          "hover:border-gray-400",
+          "transition-colors",
+          "hover:border-gray-300",
           error && "border-red-500 focus-visible:ring-red-500",
           className
         )}
@@ -34,7 +34,7 @@ const Input = React.forwardRef(({ className, type = "text", label, name, id, req
         {...props}
       />
       {error && (
-        <p className="text-sm text-red-600 font-medium">{error}</p>
+        <p className="text-[10px] text-red-600">{error}</p>
       )}
     </div>
   )}

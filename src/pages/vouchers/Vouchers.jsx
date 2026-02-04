@@ -217,7 +217,7 @@ const Vouchers = () => {
         <Card>
           <div className="text-center">
             <p className="text-sm text-gray-600">Bank Payments</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-lg font-semibold text-gray-900">
               {vouchers.filter(v => v.voucherType === 'bank_payment').length}
             </p>
           </div>
@@ -225,7 +225,7 @@ const Vouchers = () => {
         <Card>
           <div className="text-center">
             <p className="text-sm text-gray-600">Bank Receipts</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-lg font-semibold text-gray-900">
               {vouchers.filter(v => v.voucherType === 'bank_receipt').length}
             </p>
           </div>
@@ -233,7 +233,7 @@ const Vouchers = () => {
         <Card>
           <div className="text-center">
             <p className="text-sm text-gray-600">Cash Payments</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-lg font-semibold text-gray-900">
               {vouchers.filter(v => v.voucherType === 'cash_payment').length}
             </p>
           </div>
@@ -241,7 +241,7 @@ const Vouchers = () => {
         <Card>
           <div className="text-center">
             <p className="text-sm text-gray-600">Cash Receipts</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-lg font-semibold text-gray-900">
               {vouchers.filter(v => v.voucherType === 'cash_receipt').length}
             </p>
           </div>

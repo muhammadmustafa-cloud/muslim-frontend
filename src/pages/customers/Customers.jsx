@@ -128,13 +128,13 @@ const Customers = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Customers</h1>
-          <p className="text-gray-600 mt-1.5">Manage your customer database</p>
+          <h1 className="text-base font-semibold text-gray-900">Customers</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Manage your customer database</p>
         </div>
-        <Button onClick={handleCreate} size="lg">
+        <Button onClick={handleCreate}>
           <Plus className="h-5 w-5 mr-2" />
           Add Customer
         </Button>
@@ -148,7 +148,7 @@ const Customers = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-6">
+          <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
               <input

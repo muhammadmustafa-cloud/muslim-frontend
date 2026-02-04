@@ -219,14 +219,14 @@ const Accounts = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Accounts</h1>
-          <p className="text-gray-600 mt-1.5">Manage Chart of Accounts</p>
+          <h1 className="text-base font-semibold text-gray-900">Accounts</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Chart of accounts</p>
         </div>
-        <Button onClick={handleCreate} size="lg">
-          <Plus className="h-5 w-5 mr-2" />
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-1.5" />
           Add Account
         </Button>
       </div>
@@ -263,7 +263,7 @@ const Accounts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Accounts</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalAccounts}</p>
+                <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.totalAccounts}</p>
               </div>
               <Building2 className="h-8 w-8 text-purple-500" />
             </div>
