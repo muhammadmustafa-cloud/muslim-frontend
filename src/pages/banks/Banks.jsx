@@ -222,6 +222,7 @@ const Banks = () => {
               required
               error={errors.name?.message}
               placeholder="e.g. HBL, UBL, MCB"
+              helperText="Full bank name as you want it to appear"
             />
             <FormInput
               label="Account Number"
@@ -229,7 +230,8 @@ const Banks = () => {
               register={register}
               required
               error={errors.accountNumber?.message}
-              placeholder="Bank account number"
+              placeholder="e.g. 1234567890"
+              helperText="Account number as per bank record"
             />
             <FormInput
               label="Branch"
@@ -237,7 +239,8 @@ const Banks = () => {
               register={register}
               required
               error={errors.branch?.message}
-              placeholder="Branch name & city"
+              placeholder="e.g. Main Branch, Lahore"
+              helperText="Branch name and city"
             />
             <FormInput
               label="Account Title (optional)"
@@ -245,6 +248,7 @@ const Banks = () => {
               register={register}
               error={errors.accountTitle?.message}
               placeholder="As per bank record"
+              helperText="Account holder name on bank record"
             />
             <FormInput
               label="IBAN (optional)"
@@ -252,6 +256,7 @@ const Banks = () => {
               register={register}
               error={errors.iban?.message}
               placeholder="PK00 XXXX XXXX XXXX XXXX XXXX XXXX"
+              helperText="24 characters, e.g. PK36SCBL0000001123456702"
             />
           </div>
 

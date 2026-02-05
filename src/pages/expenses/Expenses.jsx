@@ -20,14 +20,14 @@ const Expenses = () => {
   const [editingExpense, setEditingExpense] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 })
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0 })
   const [viewingExpense, setViewingExpense] = useState(null)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
   const category = watch('category')
 
-  // Expense categories for filter
+  // Expense categories for filter (must match backend; includes supplier_payment from Daily Cash Memo)
   const EXPENSE_CATEGORIES = [
     { value: 'all', label: 'All Categories' },
     { value: 'mazdoor', label: 'Mazdoor' },
@@ -36,6 +36,7 @@ const Expenses = () => {
     { value: 'transport', label: 'Transport' },
     { value: 'maintenance', label: 'Maintenance' },
     { value: 'raw_material', label: 'Raw Material' },
+    { value: 'supplier_payment', label: 'Supplier Payment' },
     { value: 'packaging', label: 'Packaging' },
     { value: 'other', label: 'Other' }
   ]
@@ -239,7 +240,7 @@ const Expenses = () => {
       <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
-          <p className="text-gray-600 mt-1">Manage all expenses. Debit entries from Daily Cash Memo (mazdoor, rent, transport, etc.) appear here with &quot;Daily Cash Memo&quot; in Source.</p>
+          <p className="text-gray-600 mt-1">Manage all expenses. When you add a <strong>Debit</strong> entry (Cash Out) in Daily Cash Memo with a category like Mazdoor, Rent, Transport, etc., it appears here and on Payments. Use &quot;Refresh&quot; after adding from Daily Cash Memo.</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleCreate} variant="primary">

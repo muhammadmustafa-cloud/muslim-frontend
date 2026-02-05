@@ -1,13 +1,12 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
-const Input = React.forwardRef(({ className, type = "text", label, name, id, required, error, placeholder, register, ...props }, ref) => {
+const Input = React.forwardRef(({ className, type = "text", label, name, id, required, error, placeholder, register, helperText, ...props }, ref) => {
   const inputId = id || name;
-  
-  // If register is provided, use it to register the input
+
   const registerProps = register ? register(name) : {};
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       {label && (
         <label htmlFor={inputId} className="block text-xs font-medium text-gray-600">
           {label}
@@ -19,9 +18,9 @@ const Input = React.forwardRef(({ className, type = "text", label, name, id, req
         id={inputId}
         name={name}
         className={cn(
-          "flex h-8 w-full rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs",
+          "flex h-9 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm",
           "placeholder:text-gray-400",
-          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500 focus-visible:ring-offset-0",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-0",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "transition-colors",
           "hover:border-gray-300",
@@ -33,12 +32,15 @@ const Input = React.forwardRef(({ className, type = "text", label, name, id, req
         {...registerProps}
         {...props}
       />
+      {helperText && !error && (
+        <p className="text-xs text-gray-500" role="note">{helperText}</p>
+      )}
       {error && (
-        <p className="text-[10px] text-red-600">{error}</p>
+        <p className="text-xs text-red-600" role="alert">{error}</p>
       )}
     </div>
-  )}
-)
+  );
+})
 Input.displayName = "Input"
 
 export default Input

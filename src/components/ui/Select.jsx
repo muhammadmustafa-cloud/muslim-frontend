@@ -122,9 +122,11 @@ const SelectSeparator = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SelectSeparator.displayName = SelectPrimitive.Separator.displayName
 
-// Wrapper component for easy use
-const SelectWrapper = ({ label, name, register, required, error, options = [], placeholder, className, ...props }) => {
-  const [value, setValue] = React.useState("")
+// Wrapper component for easy use (supports controlled value via value prop from watch(name))
+const SelectWrapper = ({ label, name, register, required, error, options = [], placeholder, className, helperText, value: controlledValue, ...props }) => {
+  const [internalValue, setInternalValue] = React.useState(controlledValue ?? "")
+
+  const value = controlledValue !== undefined && controlledValue !== null ? controlledValue : internalValue
 
   React.useEffect(() => {
     if (register) {
@@ -132,18 +134,26 @@ const SelectWrapper = ({ label, name, register, required, error, options = [], p
     }
   }, [register, name, required])
 
+  React.useEffect(() => {
+    if (controlledValue !== undefined && controlledValue !== null) {
+      setInternalValue(controlledValue)
+    } else if (controlledValue === undefined || controlledValue === null || controlledValue === "") {
+      setInternalValue("")
+    }
+  }, [controlledValue])
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {label && (
-        <label htmlFor={name} className="block text-sm font-semibold text-gray-700">
+        <label htmlFor={name} className="block text-xs font-medium text-gray-600">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
         </label>
       )}
       <Select
         value={value}
         onValueChange={(val) => {
-          setValue(val)
+          setInternalValue(val)
           if (register) {
             const { onChange } = register(name, { required })
             onChange({ target: { name, value: val } })
@@ -152,7 +162,11 @@ const SelectWrapper = ({ label, name, register, required, error, options = [], p
       >
         <SelectTrigger
           id={name}
-          className={cn(error && "border-red-500 focus:ring-red-500", className)}
+          className={cn(
+            "h-9 text-sm",
+            error && "border-red-500 focus:ring-red-500",
+            className
+          )}
           {...props}
         >
           <SelectValue placeholder={placeholder || `Select ${label}`} />
@@ -165,8 +179,11 @@ const SelectWrapper = ({ label, name, register, required, error, options = [], p
           ))}
         </SelectContent>
       </Select>
+      {helperText && !error && (
+        <p className="text-xs text-gray-500" role="note">{helperText}</p>
+      )}
       {error && (
-        <p className="text-sm text-red-600 font-medium">{error}</p>
+        <p className="text-xs text-red-600" role="alert">{error}</p>
       )}
     </div>
   )

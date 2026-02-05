@@ -59,6 +59,8 @@ const DailyCashMemo = () => {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false)
   const [bulkEntries, setBulkEntries] = useState([])
   const [bulkEntryType, setBulkEntryType] = useState('credit')
+  const [isViewEntryModalOpen, setIsViewEntryModalOpen] = useState(false)
+  const [viewingEntry, setViewingEntry] = useState(null)
   
   // New state for dropdowns
   const [accounts, setAccounts] = useState([])
@@ -388,14 +390,23 @@ const DailyCashMemo = () => {
         
         toast.success(`${entryType === 'credit' ? 'Credit' : 'Debit'} entry added successfully`)
       } else {
-        // Create memo first, then add entry
-        const memoResponse = await api.post('/daily-cash-memos', {
+        // Create empty memo first, then add entry (so Payment/Expense/balances are created correctly)
+        const createResponse = await api.post('/daily-cash-memos', {
           date: selectedDate,
+          previousBalance: previousBalance,
           openingBalance: previousBalance,
-          creditEntries: entryType === 'credit' ? [entryData] : [],
-          debitEntries: entryType === 'debit' ? [entryData] : []
+          creditEntries: [],
+          debitEntries: []
         })
-        setMemo(memoResponse.data.data.memo)
+        const createdMemo = createResponse.data.data.memo
+        if (createdMemo?._id) {
+          if (entryType === 'credit') {
+            await api.post(`/daily-cash-memos/${createdMemo._id}/credit`, entryData)
+          } else {
+            await api.post(`/daily-cash-memos/${createdMemo._id}/debit`, entryData)
+          }
+        }
+        setMemo(createdMemo)
         toast.success('Entry added successfully')
       }
 
@@ -942,7 +953,7 @@ const DailyCashMemo = () => {
       <Card>
         <CardHeader>
           <CardTitle className="text-red-700">Debit Entries (Cash Out)</CardTitle>
-          <CardDescription>Money spent and expenses</CardDescription>
+          <CardDescription>Money spent — these entries also appear on the Expenses page and Payments page</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (

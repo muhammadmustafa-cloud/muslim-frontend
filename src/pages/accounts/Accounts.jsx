@@ -32,7 +32,7 @@ const Accounts = () => {
   const [banks, setBanks] = useState([])
   const [banksLoading, setBanksLoading] = useState(false)
 
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch, setError } = useForm()
   const isBankAccount = watch('isBankAccount')
   const accountType = watch('type')
 
@@ -152,7 +152,13 @@ const Accounts = () => {
       reset()
       fetchAccounts()
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save account')
+      const res = error.response?.data
+      if (res?.errors && Array.isArray(res.errors)) {
+        res.errors.forEach(({ field, message }) => setError(field, { type: 'server', message }))
+        toast.error(res.message || 'Please fix the errors below.')
+      } else {
+        toast.error(res?.message || 'Failed to save account')
+      }
     }
   }
 
@@ -323,6 +329,7 @@ const Accounts = () => {
                 disabled={!!editingAccount}
                 error={errors.code?.message}
                 placeholder="e.g., 1001"
+                helperText="Uppercase letters and numbers only, e.g. 1001, CASH01"
               />
               <FormInput
                 label="Account Name"
@@ -330,7 +337,8 @@ const Accounts = () => {
                 register={register}
                 required
                 error={errors.name?.message}
-                placeholder="Account name"
+                placeholder="e.g. Main Cash, HBL Account"
+                helperText="Short descriptive name for this account"
               />
             </div>
             
@@ -341,8 +349,9 @@ const Accounts = () => {
               required
               options={accountTypeOptions}
               error={errors.type?.message}
+              helperText="Asset, Liability, Equity, Revenue, or Expense"
             />
-            
+
             <FormInput
               label="Opening Balance"
               name="openingBalance"
@@ -351,6 +360,7 @@ const Accounts = () => {
               register={register}
               error={errors.openingBalance?.message}
               placeholder="0.00"
+              helperText="Enter 0 if starting fresh"
             />
             
             <div className="flex gap-6">
@@ -384,9 +394,11 @@ const Accounts = () => {
                   label="Bank"
                   name="bank"
                   register={register}
+                  value={watch('bank') ?? '__none__'}
                   options={[{ value: '__none__', label: 'Select a bank' }, ...banks.map((b) => ({ value: b._id, label: `${b.name} - ${b.accountNumber} (${b.branch})` }))]}
                   error={errors.bank?.message}
                   placeholder={banksLoading ? 'Loading banks...' : 'Select a bank'}
+                  helperText="Choose the bank this account is linked to, or add banks first from Banks page"
                 />
                 {banks.length === 0 && !banksLoading && (
                   <p className="text-xs text-gray-500">Add banks from the Banks page first.</p>
@@ -399,7 +411,8 @@ const Accounts = () => {
               name="notes"
               register={register}
               error={errors.notes?.message}
-              placeholder="Additional notes..."
+              placeholder="e.g. Petty cash for office"
+              helperText="Optional notes for your reference"
             />
             
             <DialogFooter>
