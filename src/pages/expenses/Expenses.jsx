@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Plus, Edit, Trash2, Search, RefreshCw } from 'lucide-react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -19,16 +19,33 @@ const Expenses = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingExpense, setEditingExpense] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 })
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [pagination, setPagination] = useState({ page: 1, limit: 25, total: 0 })
+  const [viewingExpense, setViewingExpense] = useState(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
   const category = watch('category')
+
+  // Expense categories for filter (must match backend; includes supplier_payment from Daily Cash Memo)
+  const EXPENSE_CATEGORIES = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'mazdoor', label: 'Mazdoor' },
+    { value: 'electricity', label: 'Electricity' },
+    { value: 'rent', label: 'Rent' },
+    { value: 'transport', label: 'Transport' },
+    { value: 'maintenance', label: 'Maintenance' },
+    { value: 'raw_material', label: 'Raw Material' },
+    { value: 'supplier_payment', label: 'Supplier Payment' },
+    { value: 'packaging', label: 'Packaging' },
+    { value: 'other', label: 'Other' }
+  ]
 
   useEffect(() => {
     fetchExpenses()
     fetchMazdoors()
     fetchSuppliers()
-  }, [pagination.page, searchTerm])
+  }, [pagination.page, selectedCategory])
 
   const fetchMazdoors = async () => {
     try {
@@ -51,13 +68,17 @@ const Expenses = () => {
   const fetchExpenses = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/expenses', {
-        params: {
-          page: pagination.page,
-          limit: pagination.limit,
-          search: searchTerm,
-        },
-      })
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      }
+      
+      // Add category filter if selected and not 'all'
+      if (selectedCategory && selectedCategory !== 'all') {
+        params.category = selectedCategory
+      }
+      
+      const response = await api.get('/expenses', { params })
       setExpenses(response.data.data || [])
       setPagination(prev => ({
         ...prev,
@@ -77,6 +98,11 @@ const Expenses = () => {
     setValue('date', new Date().toISOString().split('T')[0])
     setValue('paymentMethod', 'cash')
     setIsModalOpen(true)
+  }
+
+  const handleView = (expense) => {
+    setViewingExpense(expense)
+    setIsViewModalOpen(true)
   }
 
   const handleEdit = (expense) => {
@@ -153,15 +179,28 @@ const Expenses = () => {
       render: (value) => value?.name || '-',
     },
     { key: 'paymentMethod', label: 'Payment Method' },
+    {
+      key: 'source',
+      label: 'Source',
+      render: (value) =>
+        value === 'daily_cash_memo' ? (
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="Created from Daily Cash Memo">Daily Cash Memo</span>
+        ) : (
+          <span className="text-gray-400 text-xs">—</span>
+        ),
+    },
   ]
 
   const actions = [
+    { key: 'view', label: 'View', variant: 'primary' },
     { key: 'edit', label: 'Edit', variant: 'primary' },
     { key: 'delete', label: 'Delete', variant: 'danger' },
   ]
 
   const handleAction = (action, expense) => {
-    if (action === 'edit') {
+    if (action === 'view') {
+      handleView(expense)
+    } else if (action === 'edit') {
       handleEdit(expense)
     } else if (action === 'delete') {
       handleDelete(expense)
@@ -198,31 +237,58 @@ const Expenses = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Expenses</h1>
-          <p className="text-gray-600 mt-1">Manage all expenses</p>
+          <p className="text-gray-600 mt-1">Manage all expenses. When you add a <strong>Debit</strong> entry (Cash Out) in Daily Cash Memo with a category like Mazdoor, Rent, Transport, etc., it appears here and on Payments. Use &quot;Refresh&quot; after adding from Daily Cash Memo.</p>
         </div>
-        <Button onClick={handleCreate} variant="primary">
-          <Plus className="h-5 w-5 mr-2" />
-          Add Expense
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleCreate} variant="primary">
+            <Plus className="h-5 w-5 mr-2" />
+            Add Expense
+          </Button>
+          <Button onClick={fetchExpenses} variant="outline">
+            <RefreshCw className="h-5 w-5 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <Card>
         <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="Search expenses..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value)
-                setPagination(prev => ({ ...prev, page: 1 }))
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+          <div className="flex gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <input
+                type="text"
+                placeholder="Search expenses..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setPagination(prev => ({ ...prev, page: 1 }))
+                }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            
+            {/* Category Filter */}
+            <div className="w-48">
+              <select
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value)
+                  setPagination(prev => ({ ...prev, page: 1 }))
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+              >
+                {EXPENSE_CATEGORIES.map(cat => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -379,6 +445,92 @@ const Expenses = () => {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* View details: Where was this expense spent? */}
+      <Modal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        title={viewingExpense ? `Where was ${formatCurrency(viewingExpense.amount)} spent?` : 'Expense details'}
+        size="md"
+      >
+        {viewingExpense && (
+          <div className="space-y-4">
+            {/* One-line summary: e.g. "Mazdoor Ahmed got 8,000 on 15 Jan 2025" */}
+            <div className="p-3 rounded-lg bg-primary-50 border border-primary-200">
+              <p className="text-sm font-medium text-gray-700">
+                {viewingExpense.category === 'mazdoor' && viewingExpense.mazdoor?.name ? (
+                  <>Mazdoor <span className="font-semibold">{viewingExpense.mazdoor.name}</span> got {formatCurrency(viewingExpense.amount)} on {formatDate(viewingExpense.date)}.</>
+                ) : viewingExpense.category === 'raw_material' && viewingExpense.supplier?.name ? (
+                  <>Supplier <span className="font-semibold">{viewingExpense.supplier.name}</span> — {formatCurrency(viewingExpense.amount)} on {formatDate(viewingExpense.date)}.</>
+                ) : (
+                  <><span className="font-semibold capitalize">{viewingExpense.category?.replace('_', ' ') || 'Expense'}</span> of {formatCurrency(viewingExpense.amount)} on {formatDate(viewingExpense.date)}.</>
+                )}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+              <p className="text-sm font-medium text-gray-500">Amount</p>
+              <p className="text-lg font-semibold text-gray-900">{formatCurrency(viewingExpense.amount)}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="text-gray-500 font-medium">Date</p>
+                <p className="text-gray-900">{formatDate(viewingExpense.date)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">Category</p>
+                <p className="text-gray-900 capitalize">{viewingExpense.category?.replace('_', ' ') || '-'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 font-medium">Payment method</p>
+                <p className="text-gray-900 capitalize">{viewingExpense.paymentMethod || '-'}</p>
+              </div>
+              {viewingExpense.billNumber && (
+                <div>
+                  <p className="text-gray-500 font-medium">Bill number</p>
+                  <p className="text-gray-900">{viewingExpense.billNumber}</p>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className="text-gray-500 font-medium text-sm">Description</p>
+              <p className="text-gray-900">{viewingExpense.description || '-'}</p>
+            </div>
+
+            {(viewingExpense.mazdoor?.name || viewingExpense.supplier?.name) && (
+              <div>
+                <p className="text-gray-500 font-medium text-sm">Related to</p>
+                <p className="text-gray-900">
+                  {viewingExpense.mazdoor?.name && `Mazdoor: ${viewingExpense.mazdoor.name}`}
+                  {viewingExpense.mazdoor?.name && viewingExpense.supplier?.name && ' • '}
+                  {viewingExpense.supplier?.name && `Supplier: ${viewingExpense.supplier.name}`}
+                </p>
+              </div>
+            )}
+
+            {viewingExpense.notes && (
+              <div>
+                <p className="text-gray-500 font-medium text-sm">Notes</p>
+                <p className="text-gray-900">{viewingExpense.notes}</p>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-gray-200">
+              <p className="text-xs text-gray-500">
+                Recorded by <span className="font-medium text-gray-700">{viewingExpense.createdBy?.name || '—'}</span>
+                {viewingExpense.createdAt && <> on {formatDate(viewingExpense.createdAt)}</>}
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+              <Button onClick={() => { handleEdit(viewingExpense); setIsViewModalOpen(false); }}>Edit</Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   )

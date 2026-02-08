@@ -19,7 +19,7 @@ export function DataTable({
     field: col.key,
     headerName: col.label,
     flex: 1,
-    minWidth: 150,
+    minWidth: 100,
     renderCell: col.render
       ? (params) => col.render(params.value, params.row)
       : undefined,
@@ -30,7 +30,7 @@ export function DataTable({
     gridColumns.push({
       field: "actions",
       headerName: "Actions",
-      width: onView && onDelete ? 140 : 120,
+      width: onView && onDelete ? 110 : 90,
       sortable: false,
       filterable: false,
       renderCell: (params) => (
@@ -42,7 +42,7 @@ export function DataTable({
               color="primary"
               title="View"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-3.5 w-3.5" />
             </IconButton>
           )}
           {onEdit && (
@@ -52,7 +52,7 @@ export function DataTable({
               color="primary"
               title="Edit"
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-3.5 w-3.5" />
             </IconButton>
           )}
           {onDelete && (
@@ -62,7 +62,7 @@ export function DataTable({
               color="error"
               title="Delete"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </IconButton>
           )}
         </Box>
@@ -77,7 +77,7 @@ export function DataTable({
   }))
 
   return (
-    <Box sx={{ height: 600, width: "100%", '& .MuiDataGrid-root': { border: 'none' } }}>
+    <Box sx={{ height: 420, width: "100%", '& .MuiDataGrid-root': { border: 'none' } }}>
       <DataGrid
         rows={rows}
         columns={gridColumns}
@@ -88,15 +88,26 @@ export function DataTable({
         sx={{
           border: "none",
           "& .MuiDataGrid-cell": {
-            borderBottom: "1px solid #e5e7eb",
+            borderBottom: "1px solid #f3f4f6",
+            fontSize: "0.75rem",
+            padding: "4px 12px",
           },
           "& .MuiDataGrid-columnHeaders": {
             backgroundColor: "#f9fafb",
-            borderBottom: "2px solid #e5e7eb",
+            borderBottom: "1px solid #e5e7eb",
             fontWeight: 600,
+            fontSize: "0.7rem",
+            minHeight: "36px !important",
+          },
+          "& .MuiDataGrid-columnHeader": {
+            padding: "0 12px",
           },
           "& .MuiDataGrid-footerContainer": {
             borderTop: "1px solid #e5e7eb",
+            minHeight: "40px !important",
+          },
+          "& .MuiDataGrid-row": {
+            minHeight: "36px !important",
           },
           "& .MuiDataGrid-row:hover": {
             backgroundColor: "#f9fafb",

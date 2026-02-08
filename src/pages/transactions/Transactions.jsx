@@ -396,6 +396,11 @@ const Transactions = () => {
       label: 'Date',
       render: (value) => formatDate(value),
     },
+    {
+      key: 'createdBy',
+      label: 'Added by',
+      render: (value) => value?.name || '-',
+    },
   ]
 
   const customerOptions = customers.map(c => ({
@@ -448,27 +453,19 @@ const Transactions = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Transactions</h1>
-          <p className="text-gray-600 mt-1.5">Manage sales and purchases</p>
+          <h1 className="text-base font-semibold text-gray-900">Transactions</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Sales and purchases</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="success"
-            onClick={() => handleCreate('sale')}
-            size="lg"
-          >
-            <ShoppingCart className="h-5 w-5 mr-2" />
+          <Button variant="success" onClick={() => handleCreate('sale')}>
+            <ShoppingCart className="h-4 w-4 mr-1.5" />
             New Sale
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => handleCreate('purchase')}
-            size="lg"
-          >
-            <Package className="h-5 w-5 mr-2" />
+          <Button variant="primary" onClick={() => handleCreate('purchase')}>
+            <Package className="h-4 w-4 mr-1.5" />
             New Purchase
           </Button>
         </div>

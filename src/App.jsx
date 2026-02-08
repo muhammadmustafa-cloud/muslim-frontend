@@ -13,11 +13,15 @@ import Expenses from './pages/expenses/Expenses'
 import Mazdoors from './pages/mazdoors/Mazdoors'
 import Transactions from './pages/transactions/Transactions'
 import Accounts from './pages/accounts/Accounts'
+import Banks from './pages/banks/Banks'
 import Payments from './pages/vouchers/Payments'
 import Users from './pages/users/Users'
 import DailyCashMemo from './pages/dailyCashMemo/DailyCashMemo'
+import EntriesReport from './pages/entriesReport/EntriesReport'
 import LabourRates from './pages/labourRates/LabourRates'
 import LabourExpenses from './pages/labourExpenses/LabourExpenses'
+import CustomerHistory from './pages/customers/CustomerHistory'
+import SupplierHistory from './pages/suppliers/SupplierHistory'
 
 function App() {
   return (
@@ -43,10 +47,16 @@ function App() {
             <Route path="mazdoors" element={<Mazdoors />} />
             <Route path="transactions" element={<Transactions />} />
             <Route path="accounts" element={<Accounts />} />
+            <Route path="banks" element={<Banks />} />
             <Route path="payments" element={<Payments />} />
             <Route path="daily-cash-memo" element={<DailyCashMemo />} />
+            <Route path="entries-report" element={<EntriesReport />} />
             <Route path="labour" element={<LabourRates />} />
             <Route path="labour-expenses" element={<LabourExpenses />} />
+            <Route path="customer-history" element={<CustomerHistory />} />
+            <Route path="customer-history/:customerId" element={<CustomerHistory />} />
+            <Route path="supplier-history" element={<SupplierHistory />} />
+            <Route path="supplier-history/:supplierId" element={<SupplierHistory />} />
             <Route path="users" element={<Users />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

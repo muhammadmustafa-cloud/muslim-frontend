@@ -29,6 +29,8 @@ const LabourRates = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [saving, setSaving] = useState(false)
   const [filters, setFilters] = useState({ startDate: '', endDate: '' })
+  const [viewingLabourRate, setViewingLabourRate] = useState(null)
+  const [isViewDetailOpen, setIsViewDetailOpen] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm()
 
@@ -89,6 +91,11 @@ const LabourRates = () => {
       bags: ''
     })
     setIsModalOpen(true)
+  }
+
+  const handleViewLabourRate = (labourRate) => {
+    setViewingLabourRate(labourRate)
+    setIsViewDetailOpen(true)
   }
 
   const handleEditLabourRate = (labourRate) => {
@@ -342,10 +349,10 @@ const LabourRates = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Labour</h1>
+          <h1 className="text-base font-semibold text-gray-900">Labour</h1>
           <p className="text-gray-600">Manage labour work records and bag counts</p>
         </div>
         <div className="flex items-center gap-3">
@@ -418,6 +425,7 @@ const LabourRates = () => {
             columns={columns}
             data={labourRates}
             loading={loading}
+            onView={handleViewLabourRate}
             onEdit={handleEditLabourRate}
             onDelete={handleDeleteLabourRate}
           />
@@ -486,6 +494,65 @@ const LabourRates = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View labour record: e.g. "Labour Ahmed: 10 bags × PKR 50 = PKR 500 on 15 Jan 2025" */}
+      <Dialog open={isViewDetailOpen} onOpenChange={setIsViewDetailOpen}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Labour record details</DialogTitle>
+            <DialogDescription>
+              {viewingLabourRate && (
+                <span>
+                  Labour work record — {viewingLabourRate.labourExpense?.name || 'Unknown'}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {viewingLabourRate && (
+            <div className="space-y-4">
+              <div className="p-3 rounded-lg bg-primary-50 border border-primary-200">
+                <p className="text-sm font-medium text-gray-700">
+                  Labour <span className="font-semibold">{viewingLabourRate.labourExpense?.name || 'Unknown'}</span>
+                  {' — '}{Number(viewingLabourRate.bags) || 0} bags × PKR {Number(viewingLabourRate.rate || 0).toFixed(2)}
+                  {' = '}
+                  <span className="font-semibold text-green-600">
+                    PKR {((Number(viewingLabourRate.bags) || 0) * (Number(viewingLabourRate.rate) || 0)).toFixed(2)}
+                  </span>
+                  {viewingLabourRate.createdAt && <> on {formatDate(viewingLabourRate.createdAt)}</>}.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-500 font-medium">Labour name</p>
+                  <p className="text-gray-900">{viewingLabourRate.labourExpense?.name || '—'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Bags</p>
+                  <p className="text-gray-900">{Number(viewingLabourRate.bags) || 0}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Rate</p>
+                  <p className="text-gray-900">PKR {Number(viewingLabourRate.rate || 0).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Total</p>
+                  <p className="text-gray-900 font-semibold text-green-600">
+                    PKR {((Number(viewingLabourRate.bags) || 0) * (Number(viewingLabourRate.rate) || 0)).toFixed(2)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Recorded on</p>
+                  <p className="text-gray-900">{formatDate(viewingLabourRate.createdAt)}</p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsViewDetailOpen(false)}>Close</Button>
+                <Button onClick={() => { handleEditLabourRate(viewingLabourRate); setIsViewDetailOpen(false); }}>Edit</Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

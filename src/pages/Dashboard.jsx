@@ -7,8 +7,7 @@ import {
   DollarSign, 
   TrendingUp,
   TrendingDown,
-  AlertCircle,
-  ArrowRight
+  AlertCircle
 } from 'lucide-react'
 import Card from '../components/ui/Card'
 import api from '../config/api'
@@ -151,59 +150,56 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center h-48">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-600 border-t-transparent" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-        <p className="text-lg text-gray-600">Welcome to Muslim Daal Mill Management System</p>
+    <div className="space-y-3">
+      <div>
+        <h1 className="text-base font-semibold text-gray-900">Dashboard</h1>
+        <p className="text-[10px] text-gray-500 mt-0.5">Muslim Daal Mill</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
         {statCards.map((stat, index) => {
           const Icon = stat.icon
           return (
             <Card
               key={index}
-              className="cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group overflow-hidden relative"
+              className="cursor-pointer hover:bg-gray-50/80 transition-colors"
               onClick={stat.onClick}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-              <div className="relative z-10 flex items-center justify-between p-6">
-                <div>
-                  <p className="text-sm font-semibold text-gray-600 mb-2">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+              <div className="flex items-center justify-between p-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] text-gray-500 truncate uppercase tracking-wider">{stat.title}</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate mt-0.5">{stat.value}</p>
                 </div>
-                <div className={`bg-gradient-to-br ${stat.gradient} p-4 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <Icon className="h-7 w-7 text-white" />
+                <div className={`flex-shrink-0 w-8 h-8 rounded flex items-center justify-center bg-gray-100 ${stat.title.includes('Revenue') ? 'text-green-600' : stat.title.includes('Expense') ? 'text-red-600' : 'text-gray-600'}`}>
+                  <Icon className="h-3.5 w-3.5" />
                 </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             </Card>
           )
         })}
       </div>
 
-      <Card className="bg-gradient-to-br from-gray-50 to-white">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <Card>
+        <div className="p-3">
+          <h2 className="text-xs font-medium text-gray-700 mb-2">Quick Actions</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
             {quickActions.map((action, index) => {
               const Icon = action.icon
               return (
                 <button
                   key={index}
                   onClick={() => navigate(action.path)}
-                  className={`p-6 rounded-xl border-2 border-gray-200 ${action.color} transition-all duration-200 hover:scale-105 hover:shadow-lg group text-left`}
+                  className={`flex items-center gap-1.5 p-2 rounded border border-gray-100 ${action.color} transition-colors hover:border-gray-200 text-left`}
                 >
-                  <Icon className="h-8 w-8 mb-3 group-hover:scale-110 transition-transform" />
-                  <p className="font-semibold text-sm">{action.title}</p>
-                  <ArrowRight className="h-4 w-4 mt-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="text-[10px] font-medium truncate">{action.title}</span>
                 </button>
               )
             })}

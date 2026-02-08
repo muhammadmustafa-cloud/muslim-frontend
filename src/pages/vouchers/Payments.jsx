@@ -36,6 +36,8 @@ const Payments = () => {
     cashPayments: 0,
     chequePayments: 0
   })
+  const [viewingPayment, setViewingPayment] = useState(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
 
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
   const paymentMethod = watch('paymentMethod')
@@ -123,6 +125,11 @@ const Payments = () => {
     setValue('paymentMethod', 'cash')
     setValue('type', type)
     setIsModalOpen(true)
+  }
+
+  const handleView = (payment) => {
+    setViewingPayment(payment)
+    setIsViewModalOpen(true)
   }
 
   const handleEdit = (payment) => {
@@ -247,6 +254,16 @@ const Payments = () => {
       label: 'Date',
       render: (value) => formatDate(value),
     },
+    {
+      key: 'source',
+      label: 'Source',
+      render: (value) =>
+        value === 'daily_cash_memo' ? (
+          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" title="Created from Daily Cash Memo">Daily Cash Memo</span>
+        ) : (
+          <span className="text-gray-400 text-xs">—</span>
+        ),
+    },
   ]
 
   const accountOptions = accounts.map(acc => ({
@@ -287,72 +304,64 @@ const Payments = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">Payments & Receipts</h1>
           <p className="text-gray-600 mt-1.5">
-            Record money going out (payments) and non-sale money coming in (receipts like loans, refunds, etc.)
+            Record money going out (payments) and money coming in (receipts). Entries added from Daily Cash Memo appear here with &quot;Daily Cash Memo&quot; in Source.
             <br />
-            <span className="text-sm text-primary-600 font-medium">Note: For customer sales, use the Transactions page</span>
+            <span className="text-sm text-primary-600 font-medium">Note: For item sales/purchases use the Transactions page</span>
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="danger"
-            onClick={() => handleCreate('payment')}
-            size="lg"
-          >
-            <ArrowDownCircle className="h-5 w-5 mr-2" />
-            Make Payment
+          <Button variant="danger" onClick={() => handleCreate('payment')}>
+            <ArrowDownCircle className="h-4 w-4 mr-1.5" />
+            Payment
           </Button>
-          <Button
-            variant="success"
-            onClick={() => handleCreate('receipt')}
-            size="lg"
-          >
-            <ArrowUpCircle className="h-5 w-5 mr-2" />
-            Record Receipt
+          <Button variant="success" onClick={() => handleCreate('receipt')}>
+            <ArrowUpCircle className="h-4 w-4 mr-1.5" />
+            Receipt
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 pb-3">
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600">Total Payments</p>
-              <p className="text-2xl font-bold text-red-600 mt-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Payments</p>
+              <p className="text-lg font-semibold text-red-600 mt-0.5">
                 {formatCurrency(stats.totalPayments)}
               </p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 pb-3">
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600">Total Receipts</p>
-              <p className="text-2xl font-bold text-green-600 mt-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Total Receipts</p>
+              <p className="text-lg font-semibold text-green-600 mt-0.5">
                 {formatCurrency(stats.totalReceipts)}
               </p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 pb-3">
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600">Cash Payments</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Cash Payments</p>
+              <p className="text-lg font-semibold text-gray-900 mt-0.5">
                 {stats.cashPayments}
               </p>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 pb-3">
             <div className="text-center">
-              <p className="text-sm font-medium text-gray-600">Cheque Payments</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Cheque Payments</p>
+              <p className="text-lg font-semibold text-gray-900 mt-0.5">
                 {stats.chequePayments}
               </p>
             </div>
@@ -368,21 +377,21 @@ const Payments = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-6 flex gap-4">
+          <div className="mb-3 flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <input
                 type="text"
-                placeholder="Search by description, name, voucher number..."
+                placeholder="Search..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 transition-all"
+                className="w-full pl-8 pr-3 py-1.5 border border-gray-200 bg-white rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2.5 border border-gray-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="px-3 py-1.5 border border-gray-200 bg-white rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               <option value="all">All</option>
               <option value="payment">Payments Only</option>
@@ -393,6 +402,7 @@ const Payments = () => {
             columns={columns}
             data={payments}
             loading={loading}
+            onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
@@ -414,8 +424,8 @@ const Payments = () => {
                 : 'Record non-sale money coming into your account (loans, refunds, other income). For customer sales, use the Transactions page.'}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               <FormInput
                 label="Date"
                 name="date"
@@ -624,6 +634,132 @@ const Payments = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View details: Where did this money go / come from? */}
+      <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {viewingPayment?.type === 'payment' ? (
+                <>Where did this <span className="text-red-600">{formatCurrency(viewingPayment?.amount)}</span> go?</>
+              ) : (
+                <>Where did this <span className="text-green-600">{formatCurrency(viewingPayment?.amount)}</span> come from?</>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              Full details of this {viewingPayment?.type === 'payment' ? 'payment' : 'receipt'}
+            </DialogDescription>
+          </DialogHeader>
+          {viewingPayment && (
+            <div className="space-y-4">
+              {/* One-line summary: e.g. "Mazdoor Ahmed received 8,000 from Bank on 15 Jan 2025" */}
+              <div className="p-3 rounded-lg bg-primary-50 border border-primary-200">
+                <p className="text-sm font-medium text-gray-700">
+                  {viewingPayment.type === 'payment' ? (
+                    viewingPayment.category === 'mazdoor' && (viewingPayment.paidTo || viewingPayment.mazdoor?.name) ? (
+                      <>Mazdoor <span className="font-semibold">{viewingPayment.mazdoor?.name || viewingPayment.paidTo}</span> received {formatCurrency(viewingPayment.amount)} from {(viewingPayment.fromAccount?.name || viewingPayment.fromAccount) || 'account'} on {formatDate(viewingPayment.date)}.</>
+                    ) : viewingPayment.category === 'raw_material' && (viewingPayment.paidTo || viewingPayment.supplier?.name) ? (
+                      <>Supplier <span className="font-semibold">{viewingPayment.supplier?.name || viewingPayment.paidTo}</span> received {formatCurrency(viewingPayment.amount)} from {(viewingPayment.fromAccount?.name || viewingPayment.fromAccount) || 'account'} on {formatDate(viewingPayment.date)}.</>
+                    ) : (
+                      <>Payment of {formatCurrency(viewingPayment.amount)} to <span className="font-semibold">{viewingPayment.paidTo || '—'}</span> from {(viewingPayment.fromAccount?.name || viewingPayment.fromAccount) || 'account'} on {formatDate(viewingPayment.date)}.</>
+                    )
+                  ) : (
+                    <>Received {formatCurrency(viewingPayment.amount)} from <span className="font-semibold">{viewingPayment.receivedFrom || '—'}</span> into {(viewingPayment.toAccount?.name || viewingPayment.toAccount) || 'account'} on {formatDate(viewingPayment.date)}.</>
+                  )}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
+                <p className="text-sm font-medium text-gray-500">Amount</p>
+                <p className={`text-lg font-semibold ${viewingPayment.type === 'payment' ? 'text-red-600' : 'text-green-600'}`}>
+                  {formatCurrency(viewingPayment.amount)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-gray-500 font-medium">Voucher #</p>
+                  <p className="text-gray-900">{viewingPayment.voucherNumber || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Date</p>
+                  <p className="text-gray-900">{formatDate(viewingPayment.date)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Type</p>
+                  <p className="text-gray-900 capitalize">{viewingPayment.type === 'payment' ? 'Payment (money out)' : 'Receipt (money in)'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 font-medium">Method</p>
+                  <p className="text-gray-900 capitalize">{viewingPayment.paymentMethod?.replace('_', ' ') || '-'}</p>
+                </div>
+              </div>
+
+              {viewingPayment.type === 'payment' ? (
+                <>
+                  <div>
+                    <p className="text-gray-500 font-medium text-sm">Paid from account</p>
+                    <p className="text-gray-900">{(viewingPayment.fromAccount?.name || viewingPayment.fromAccount) || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium text-sm">Paid to</p>
+                    <p className="text-gray-900">{viewingPayment.paidTo || '-'}</p>
+                  </div>
+                  {viewingPayment.category && (
+                    <div>
+                      <p className="text-gray-500 font-medium text-sm">Category</p>
+                      <p className="text-gray-900 capitalize">{viewingPayment.category.replace('_', ' ')}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-gray-500 font-medium text-sm">Received to account</p>
+                    <p className="text-gray-900">{(viewingPayment.toAccount?.name || viewingPayment.toAccount) || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 font-medium text-sm">Received from</p>
+                    <p className="text-gray-900">{viewingPayment.receivedFrom || '-'}</p>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <p className="text-gray-500 font-medium text-sm">Description</p>
+                <p className="text-gray-900">{viewingPayment.description || '-'}</p>
+              </div>
+              {viewingPayment.chequeNumber && (
+                <div>
+                  <p className="text-gray-500 font-medium text-sm">Cheque number</p>
+                  <p className="text-gray-900">{viewingPayment.chequeNumber}</p>
+                </div>
+              )}
+              {viewingPayment.notes && (
+                <div>
+                  <p className="text-gray-500 font-medium text-sm">Notes</p>
+                  <p className="text-gray-900">{viewingPayment.notes}</p>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-gray-200">
+                <p className="text-xs text-gray-500">
+                  Recorded by <span className="font-medium text-gray-700">{viewingPayment.createdBy?.name || '—'}</span>
+                  {viewingPayment.createdAt && (
+                    <> on {formatDate(viewingPayment.createdAt)}</>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>Close</Button>
+            <Button onClick={() => { if (viewingPayment) handleEdit(viewingPayment); setIsViewModalOpen(false); }}>
+              Edit
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

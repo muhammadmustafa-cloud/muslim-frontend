@@ -29,14 +29,29 @@ const Accounts = () => {
     totalBank: 0,
     totalAccounts: 0
   })
+  const [banks, setBanks] = useState([])
+  const [banksLoading, setBanksLoading] = useState(false)
 
-  const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm()
+  const { register, handleSubmit, formState: { errors }, reset, setValue, watch, setError } = useForm()
   const isBankAccount = watch('isBankAccount')
   const accountType = watch('type')
 
   useEffect(() => {
     fetchAccounts()
   }, [searchTerm])
+
+  const fetchBanks = async () => {
+    try {
+      setBanksLoading(true)
+      const response = await api.get('/banks', { params: { page: 1, limit: 500, isActive: true } })
+      setBanks(response.data.data || [])
+    } catch (error) {
+      toast.error('Failed to fetch banks')
+      console.error(error)
+    } finally {
+      setBanksLoading(false)
+    }
+  }
 
   const fetchAccounts = async () => {
     try {
@@ -75,6 +90,7 @@ const Accounts = () => {
       isBankAccount: false,
       openingBalance: 0,
     })
+    fetchBanks()
     setIsModalOpen(true)
   }
 
@@ -86,10 +102,12 @@ const Accounts = () => {
     setValue('openingBalance', account.openingBalance || 0)
     setValue('isCashAccount', account.isCashAccount || false)
     setValue('isBankAccount', account.isBankAccount || false)
+    setValue('bank', account.bank?._id || account.bank || '__none__')
     setValue('bankDetails.bankName', account.bankDetails?.bankName || '')
     setValue('bankDetails.accountNumber', account.bankDetails?.accountNumber || '')
     setValue('bankDetails.branch', account.bankDetails?.branch || '')
     setValue('notes', account.notes || '')
+    fetchBanks()
     setIsModalOpen(true)
   }
 
@@ -111,14 +129,14 @@ const Accounts = () => {
     try {
       const accountData = {
         ...data,
-        bankDetails: data.isBankAccount ? {
+        bank: data.isBankAccount && data.bank && data.bank !== '__none__' ? data.bank : null,
+        bankDetails: data.isBankAccount && !data.bank ? {
           bankName: data['bankDetails.bankName'],
           accountNumber: data['bankDetails.accountNumber'],
           branch: data['bankDetails.branch'],
         } : undefined,
       }
-      
-      // Clean up the data
+
       delete accountData['bankDetails.bankName']
       delete accountData['bankDetails.accountNumber']
       delete accountData['bankDetails.branch']
@@ -134,7 +152,13 @@ const Accounts = () => {
       reset()
       fetchAccounts()
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to save account')
+      const res = error.response?.data
+      if (res?.errors && Array.isArray(res.errors)) {
+        res.errors.forEach(({ field, message }) => setError(field, { type: 'server', message }))
+        toast.error(res.message || 'Please fix the errors below.')
+      } else {
+        toast.error(res?.message || 'Failed to save account')
+      }
     }
   }
 
@@ -164,9 +188,9 @@ const Accounts = () => {
     {
       key: 'isBankAccount',
       label: 'Bank',
-      render: (value) => (
+      render: (value, row) => (
         <span className={`px-2 py-1 rounded-full text-xs ${value ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
-          {value ? 'Yes' : 'No'}
+          {value ? (row.bank?.name || row.bankDetails?.bankName || 'Yes') : 'No'}
         </span>
       ),
     },
@@ -201,14 +225,14 @@ const Accounts = () => {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Accounts</h1>
-          <p className="text-gray-600 mt-1.5">Manage Chart of Accounts</p>
+          <h1 className="text-base font-semibold text-gray-900">Accounts</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Chart of accounts</p>
         </div>
-        <Button onClick={handleCreate} size="lg">
-          <Plus className="h-5 w-5 mr-2" />
+        <Button onClick={handleCreate}>
+          <Plus className="h-4 w-4 mr-1.5" />
           Add Account
         </Button>
       </div>
@@ -245,7 +269,7 @@ const Accounts = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Accounts</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalAccounts}</p>
+                <p className="text-lg font-semibold text-gray-900 mt-0.5">{stats.totalAccounts}</p>
               </div>
               <Building2 className="h-8 w-8 text-purple-500" />
             </div>
@@ -305,6 +329,7 @@ const Accounts = () => {
                 disabled={!!editingAccount}
                 error={errors.code?.message}
                 placeholder="e.g., 1001"
+                helperText="Uppercase letters and numbers only, e.g. 1001, CASH01"
               />
               <FormInput
                 label="Account Name"
@@ -312,7 +337,8 @@ const Accounts = () => {
                 register={register}
                 required
                 error={errors.name?.message}
-                placeholder="Account name"
+                placeholder="e.g. Main Cash, HBL Account"
+                helperText="Short descriptive name for this account"
               />
             </div>
             
@@ -323,8 +349,9 @@ const Accounts = () => {
               required
               options={accountTypeOptions}
               error={errors.type?.message}
+              helperText="Asset, Liability, Equity, Revenue, or Expense"
             />
-            
+
             <FormInput
               label="Opening Balance"
               name="openingBalance"
@@ -333,6 +360,7 @@ const Accounts = () => {
               register={register}
               error={errors.openingBalance?.message}
               placeholder="0.00"
+              helperText="Enter 0 if starting fresh"
             />
             
             <div className="flex gap-6">
@@ -362,27 +390,19 @@ const Accounts = () => {
             
             {isBankAccount && (
               <div className="space-y-4 border-t pt-4">
-                <FormInput
-                  label="Bank Name"
-                  name="bankDetails.bankName"
+                <FormSelect
+                  label="Bank"
+                  name="bank"
                   register={register}
-                  error={errors['bankDetails.bankName']?.message}
-                  placeholder="Bank name"
+                  value={watch('bank') ?? '__none__'}
+                  options={[{ value: '__none__', label: 'Select a bank' }, ...banks.map((b) => ({ value: b._id, label: `${b.name} - ${b.accountNumber} (${b.branch})` }))]}
+                  error={errors.bank?.message}
+                  placeholder={banksLoading ? 'Loading banks...' : 'Select a bank'}
+                  helperText="Choose the bank this account is linked to, or add banks first from Banks page"
                 />
-                <FormInput
-                  label="Account Number"
-                  name="bankDetails.accountNumber"
-                  register={register}
-                  error={errors['bankDetails.accountNumber']?.message}
-                  placeholder="Account number"
-                />
-                <FormInput
-                  label="Branch"
-                  name="bankDetails.branch"
-                  register={register}
-                  error={errors['bankDetails.branch']?.message}
-                  placeholder="Branch name"
-                />
+                {banks.length === 0 && !banksLoading && (
+                  <p className="text-xs text-gray-500">Add banks from the Banks page first.</p>
+                )}
               </div>
             )}
             
@@ -391,7 +411,8 @@ const Accounts = () => {
               name="notes"
               register={register}
               error={errors.notes?.message}
-              placeholder="Additional notes..."
+              placeholder="e.g. Petty cash for office"
+              helperText="Optional notes for your reference"
             />
             
             <DialogFooter>
